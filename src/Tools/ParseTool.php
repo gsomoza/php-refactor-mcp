@@ -112,11 +112,11 @@ class ParseTool
             
             if (is_array($value)) {
                 foreach ($value as $child) {
-                    if (is_object($child) && str_starts_with(get_class($child), 'PhpParser\\Node\\')) {
+                    if ($this->isPhpParserNode($child)) {
                         $children[] = $this->nodeToString($child, $depth + 1);
                     }
                 }
-            } elseif (is_object($value) && str_starts_with(get_class($value), 'PhpParser\\Node\\')) {
+            } elseif ($this->isPhpParserNode($value)) {
                 $children[] = $this->nodeToString($value, $depth + 1);
             }
         }
@@ -126,5 +126,13 @@ class ParseTool
         }
         
         return $result;
+    }
+
+    /**
+     * Check if a value is a PhpParser node object
+     */
+    private function isPhpParserNode(mixed $value): bool
+    {
+        return is_object($value) && str_starts_with(get_class($value), 'PhpParser\\Node\\');
     }
 }
