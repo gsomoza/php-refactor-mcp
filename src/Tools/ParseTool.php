@@ -19,23 +19,48 @@ class ParseTool
     }
 
     /**
-     * Parse PHP code and return the Abstract Syntax Tree (AST) representation
+     * Parse a PHP file and return the Abstract Syntax Tree (AST) representation
      *
-     * @param string $code PHP code to parse
+     * @param string $file Path to the PHP file to parse
      * @return array{success: bool, ast?: string, nodeCount?: int, error?: string}
      */
     #[McpTool(
         name: 'parse_php',
-        description: 'Parse PHP code and return the Abstract Syntax Tree (AST) representation'
+        description: 'Parse a PHP file and return the Abstract Syntax Tree (AST) representation'
     )]
     public function parse(
         #[Schema(
             type: 'string',
-            description: 'PHP code to parse'
+            description: 'Path to the PHP file to parse'
         )]
-        string $code
+        string $file
     ): array {
         try {
+            // Check if file exists
+            if (!file_exists($file)) {
+                return [
+                    'success' => false,
+                    'error' => "File not found: {$file}"
+                ];
+            }
+
+            // Check if file is readable
+            if (!is_readable($file)) {
+                return [
+                    'success' => false,
+                    'error' => "File is not readable: {$file}"
+                ];
+            }
+
+            // Read file contents
+            $code = file_get_contents($file);
+            if ($code === false) {
+                return [
+                    'success' => false,
+                    'error' => "Failed to read file: {$file}"
+                ];
+            }
+
             $parser = $this->parserFactory->createForNewestSupportedVersion();
             $ast = $parser->parse($code);
 
@@ -52,7 +77,8 @@ class ParseTool
             return [
                 'success' => true,
                 'ast' => $astString,
-                'nodeCount' => count($ast)
+                'nodeCount' => count($ast),
+                'file' => $file
             ];
         } catch (Error $e) {
             return [

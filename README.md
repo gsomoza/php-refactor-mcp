@@ -37,15 +37,15 @@ php bin/php-parser-mcp
 
 #### parse_php
 
-Parse PHP code and return the Abstract Syntax Tree (AST).
+Parse a PHP file and return the Abstract Syntax Tree (AST).
 
 **Parameters:**
-- `code` (string): PHP code to parse
+- `file` (string): Path to the PHP file to parse
 
 **Example:**
 ```json
 {
-  "code": "<?php\n$x = 1 + 2;"
+  "file": "/path/to/file.php"
 }
 ```
 

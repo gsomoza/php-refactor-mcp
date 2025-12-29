@@ -75,7 +75,7 @@ mcp-inspector php bin/php-parser-mcp
   "params": {
     "name": "parse_php",
     "arguments": {
-      "code": "<?php $x = 1 + 2;"
+      "file": "/path/to/file.php"
     }
   }
 }

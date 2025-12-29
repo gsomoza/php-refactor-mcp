@@ -10,21 +10,46 @@ use PHPUnit\Framework\TestCase;
 class ParseToolTest extends TestCase
 {
     private ParseTool $tool;
+    private string $tempDir;
 
     protected function setUp(): void
     {
         $this->tool = new ParseTool();
+        $this->tempDir = sys_get_temp_dir() . '/php-parser-mcp-test-' . uniqid();
+        mkdir($this->tempDir);
+    }
+
+    protected function tearDown(): void
+    {
+        // Clean up temp files
+        if (is_dir($this->tempDir)) {
+            $files = glob($this->tempDir . '/*');
+            foreach ($files as $file) {
+                if (is_file($file)) {
+                    unlink($file);
+                }
+            }
+            rmdir($this->tempDir);
+        }
+    }
+
+    private function createTempFile(string $content): string
+    {
+        $file = $this->tempDir . '/test_' . uniqid() . '.php';
+        file_put_contents($file, $content);
+        return $file;
     }
 
     public function testParseSimpleCode(): void
     {
-        $code = '<?php $x = 1 + 2;';
-        $result = $this->tool->parse($code);
+        $file = $this->createTempFile('<?php $x = 1 + 2;');
+        $result = $this->tool->parse($file);
 
         $this->assertTrue($result['success']);
         $this->assertArrayHasKey('ast', $result);
         $this->assertArrayHasKey('nodeCount', $result);
         $this->assertGreaterThan(0, $result['nodeCount']);
+        $this->assertEquals($file, $result['file']);
     }
 
     public function testParseClassDefinition(): void
@@ -37,7 +62,8 @@ class MyClass {
         return $this->property;
     }
 }';
-        $result = $this->tool->parse($code);
+        $file = $this->createTempFile($code);
+        $result = $this->tool->parse($file);
 
         $this->assertTrue($result['success']);
         $this->assertArrayHasKey('ast', $result);
@@ -50,7 +76,8 @@ class MyClass {
 function calculateSum($a, $b) {
     return $a + $b;
 }';
-        $result = $this->tool->parse($code);
+        $file = $this->createTempFile($code);
+        $result = $this->tool->parse($file);
 
         $this->assertTrue($result['success']);
         $this->assertArrayHasKey('ast', $result);
@@ -65,7 +92,8 @@ function test(?string $param): ?int {
     [$a, $b] = [1, 2];
     return $a + $b;
 }';
-        $result = $this->tool->parse($code);
+        $file = $this->createTempFile($code);
+        $result = $this->tool->parse($file);
 
         $this->assertTrue($result['success']);
         $this->assertArrayHasKey('ast', $result);
@@ -73,8 +101,8 @@ function test(?string $param): ?int {
 
     public function testParseSyntaxError(): void
     {
-        $code = '<?php $x = ;'; // Syntax error: missing expression
-        $result = $this->tool->parse($code);
+        $file = $this->createTempFile('<?php $x = ;'); // Syntax error: missing expression
+        $result = $this->tool->parse($file);
 
         $this->assertFalse($result['success']);
         $this->assertArrayHasKey('error', $result);
@@ -83,8 +111,8 @@ function test(?string $param): ?int {
 
     public function testParseInvalidCode(): void
     {
-        $code = 'not valid php code at all';
-        $result = $this->tool->parse($code);
+        $file = $this->createTempFile('not valid php code at all');
+        $result = $this->tool->parse($file);
 
         // Text without PHP tags is treated as InlineHTML, which is valid
         $this->assertTrue($result['success']);
@@ -93,8 +121,8 @@ function test(?string $param): ?int {
 
     public function testParseEmptyCode(): void
     {
-        $code = '';
-        $result = $this->tool->parse($code);
+        $file = $this->createTempFile('');
+        $result = $this->tool->parse($file);
 
         // Empty code results in empty AST (no statements)
         $this->assertTrue($result['success']);
@@ -109,7 +137,8 @@ $name = "John";
 $age = 30;
 $isActive = true;
 ';
-        $result = $this->tool->parse($code);
+        $file = $this->createTempFile($code);
+        $result = $this->tool->parse($file);
 
         $this->assertTrue($result['success']);
         $this->assertArrayHasKey('ast', $result);
@@ -129,7 +158,8 @@ class UserService {
     private UserRepository $repository;
 }
 ';
-        $result = $this->tool->parse($code);
+        $file = $this->createTempFile($code);
+        $result = $this->tool->parse($file);
 
         $this->assertTrue($result['success']);
         $this->assertArrayHasKey('ast', $result);
@@ -141,9 +171,34 @@ class UserService {
         $code = '<?php
 $result = ($a + $b) * ($c - $d) / $e;
 ';
-        $result = $this->tool->parse($code);
+        $file = $this->createTempFile($code);
+        $result = $this->tool->parse($file);
 
         $this->assertTrue($result['success']);
         $this->assertArrayHasKey('ast', $result);
+    }
+
+    public function testParseNonExistentFile(): void
+    {
+        $result = $this->tool->parse('/path/to/nonexistent/file.php');
+
+        $this->assertFalse($result['success']);
+        $this->assertArrayHasKey('error', $result);
+        $this->assertStringContainsString('File not found', $result['error']);
+    }
+
+    public function testParseUnreadableFile(): void
+    {
+        $file = $this->createTempFile('<?php echo "test";');
+        chmod($file, 0000);
+
+        $result = $this->tool->parse($file);
+
+        $this->assertFalse($result['success']);
+        $this->assertArrayHasKey('error', $result);
+        $this->assertStringContainsString('not readable', $result['error']);
+
+        // Clean up
+        chmod($file, 0644);
     }
 }
