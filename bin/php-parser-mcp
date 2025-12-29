@@ -1,0 +1,30 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+// Find autoloader
+$autoloadPaths = [
+    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/../../../autoload.php',
+];
+
+$autoloadPath = null;
+foreach ($autoloadPaths as $path) {
+    if (file_exists($path)) {
+        $autoloadPath = $path;
+        break;
+    }
+}
+
+if ($autoloadPath === null) {
+    fwrite(STDERR, "Error: Composer autoloader not found. Please run 'composer install'.\n");
+    exit(1);
+}
+
+require $autoloadPath;
+
+use Somoza\PhpParserMcp\Server;
+
+// Start the MCP server
+Server::run();
