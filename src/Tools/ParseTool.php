@@ -22,7 +22,7 @@ class ParseTool
      * Parse a PHP file and return the Abstract Syntax Tree (AST) representation
      *
      * @param string $file Path to the PHP file to parse
-     * @return array{success: bool, ast?: string, nodeCount?: int, error?: string}
+     * @return array{success: bool, ast?: string, nodeCount?: int, file?: string, error?: string}
      */
     #[McpTool(
         name: 'parse_php',

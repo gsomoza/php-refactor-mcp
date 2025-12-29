@@ -189,6 +189,11 @@ $result = ($a + $b) * ($c - $d) / $e;
 
     public function testParseUnreadableFile(): void
     {
+        // Skip this test on Windows as chmod doesn't work the same way
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $this->markTestSkipped('Skipping file permission test on Windows');
+        }
+
         $file = $this->createTempFile('<?php echo "test";');
         chmod($file, 0000);
 
