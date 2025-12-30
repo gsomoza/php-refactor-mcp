@@ -23,8 +23,12 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.1'
-          extensions: mbstring, xml, json
+          extensions: mbstring, xml, ctype, json
           coverage: none
+          tools: composer:v2
+
+      - name: Validate composer.json and composer.lock
+        run: composer validate --strict
 
       - name: Get Composer Cache Directory
         id: composer-cache
@@ -50,9 +54,12 @@ jobs:
 
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
-
-      - name: Validate environment
+        
+      - name: Verify environment
         run: |
-          php --version
-          composer --version
-          php -l bin/php-parser-mcp
+          echo "PHP Version: $(php -v)"
+          echo "Composer Version: $(composer --version)"
+          echo "PHPUnit Version: $(vendor/bin/phpunit --version)"
+          echo "PHPCS Version: $(vendor/bin/phpcs --version)"
+          echo "PHPStan Version: $(vendor/bin/phpstan --version)"
+          echo "Environment setup completed successfully!"
