@@ -6,6 +6,7 @@ A Model Context Protocol (MCP) server that provides automated PHP refactoring to
 
 - 🔧 **Extract Method**: Extract code blocks into separate methods
 - 📦 **Extract Variable**: Extract expressions into named variables
+- 🔄 **Introduce Variable**: Introduce a new variable from selected expression (preferred for large files)
 - ✏️ **Rename Variable**: Safely rename variables across scopes
 - 🌳 **Parse/Dump AST**: Parse PHP code and inspect Abstract Syntax Tree
 - 🚀 **PHP 8.1+**: Built with modern PHP features
