@@ -44,9 +44,9 @@ jobs:
         run: composer test
       
       - name: Run PHPCS
-        run: composer phpcs -- --report=checkstyle | cs2pr
+        run: vendor/bin/phpcs --report=checkstyle -q | cs2pr
         continue-on-error: true
       
       - name: Run PHPStan
-        run: composer phpstan -- --error-format=github
+        run: vendor/bin/phpstan analyse
         continue-on-error: true
