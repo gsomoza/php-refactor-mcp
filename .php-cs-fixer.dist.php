@@ -8,7 +8,7 @@ $finder = PhpCsFixer\Finder::create()
         __DIR__ . '/tests',
     ])
     ->append([
-        __DIR__ . '/bin/php-parser-mcp',
+        __DIR__ . '/bin/php-refactor-mcp',
     ])
     ->name('*.php')
     ->notName('*.blade.php')
