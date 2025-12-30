@@ -151,9 +151,8 @@ class ExpressionFinder extends NodeVisitorAbstract
                     if ($this->bestMatch === null) {
                         $this->bestMatch = $node;
                         $this->parentStatement = !empty($this->stmtStack) ? end($this->stmtStack) : null;
-                    }
-                    // Prefer larger (less specific / outermost) expressions on the same line
-                    elseif ($this->isLessSpecific($node, $this->bestMatch)) {
+                    } elseif ($this->isLessSpecific($node, $this->bestMatch)) {
+                        // Prefer larger (less specific / outermost) expressions on the same line
                         $this->bestMatch = $node;
                         $this->parentStatement = !empty($this->stmtStack) ? end($this->stmtStack) : null;
                     }

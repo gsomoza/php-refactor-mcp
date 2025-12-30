@@ -53,7 +53,7 @@ class ExtractMethodTool
         if (!RefactoringHelpers::tryParseRange($selectionRange, $startLine, $startColumn, $endLine, $endColumn)) {
             return [
                 'success' => false,
-                'error' => "Invalid selection range format. Use 'startLine:startColumn-endLine:endColumn' or 'startLine-endLine'"
+                'error' => 'Invalid selection range format. Use \'startLine:startColumn-endLine:endColumn\' or \'startLine-endLine\''
             ];
         }
 
@@ -597,7 +597,7 @@ class MethodExtractor extends NodeVisitorAbstract
             // We know $node is the parent method (ClassMethod or Function_), which has stmts property
             /** @var ClassMethod|Stmt\Function_ $node */
             $stmts = $node->stmts ?? [];
-            
+
             foreach ($stmts as $stmt) {
                 // Skip statements without line information - they should not be in our range
                 if (!$stmt->hasAttribute('startLine')) {
@@ -610,9 +610,8 @@ class MethodExtractor extends NodeVisitorAbstract
                 // Before the range: keep statement
                 if ($stmtLine < $this->startLine) {
                     $newStmts[] = $stmt;
-                }
-                // At start of range: add method call
-                elseif ($stmtLine >= $this->startLine && $stmtLine <= $this->endLine && !$replacementAdded) {
+                } elseif ($stmtLine >= $this->startLine && $stmtLine <= $this->endLine && !$replacementAdded) {
+                    // At start of range: add method call
                     $replacementAdded = true;
 
                     // Create method call arguments
@@ -655,13 +654,10 @@ class MethodExtractor extends NodeVisitorAbstract
                     } else {
                         $newStmts[] = new Expression($methodCall);
                     }
-                }
-                // In range: skip
-                elseif ($stmtLine >= $this->startLine && $stmtLine <= $this->endLine) {
-                    // Skip
-                }
-                // After range: keep statement
-                elseif ($stmtLine > $this->endLine) {
+                } elseif ($stmtLine >= $this->startLine && $stmtLine <= $this->endLine) {
+                    // In range: skip
+                } elseif ($stmtLine > $this->endLine) {
+                    // After range: keep statement
                     $newStmts[] = $stmt;
                 }
             }
