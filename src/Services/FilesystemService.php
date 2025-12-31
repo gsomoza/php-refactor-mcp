@@ -13,8 +13,7 @@ class FilesystemService
 {
     public function __construct(
         private readonly FilesystemOperator $filesystem
-    ) {
-    }
+    ) {}
 
     /**
      * Check if a file exists.

@@ -11,12 +11,13 @@ use Somoza\PhpRefactorMcp\Services\FilesystemService;
 
 abstract class FilesystemTestCase extends TestCase
 {
+    /** @phpstan-ignore-next-line property.uninitializedProperty */
     protected FilesystemService $filesystem;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Create in-memory filesystem for testing
         $adapter = new InMemoryFilesystemAdapter();
         $flysystem = new Filesystem($adapter);
