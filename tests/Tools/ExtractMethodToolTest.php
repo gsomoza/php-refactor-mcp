@@ -23,9 +23,8 @@ class ExtractMethodToolTest extends FixtureBasedTestCase
     }
 
     /**
-     * @param string $fixtureName
-     * @param string $code
      * @param array<string, mixed> $params
+     *
      * @return array<string, mixed>
      */
     protected function executeTool(string $fixtureName, string $code, array $params): array

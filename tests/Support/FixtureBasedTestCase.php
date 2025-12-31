@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Somoza\PhpRefactorMcp\Tests\Support;
 
-use DirectoryIterator;
-
 /**
  * Base test case for fixture-based testing.
  *
@@ -22,7 +20,7 @@ abstract class FixtureBasedTestCase extends FilesystemTestCase
 {
     /**
      * Get the name of the tool being tested.
-     * This should match the directory name in tests/Fixtures/
+     * This should match the directory name in tests/Fixtures/.
      */
     abstract protected function getToolName(): string;
 
@@ -32,6 +30,7 @@ abstract class FixtureBasedTestCase extends FilesystemTestCase
      * @param string $fixtureName The name of the fixture (without .php extension)
      * @param string $code The PHP code from the fixture file
      * @param array<string, mixed> $params Parameters parsed from fixture comments
+     *
      * @return array<string, mixed>
      */
     abstract protected function executeTool(string $fixtureName, string $code, array $params): array;
@@ -51,7 +50,7 @@ abstract class FixtureBasedTestCase extends FilesystemTestCase
         }
 
         // Find all .php files in the fixtures directory
-        foreach (new DirectoryIterator($fixturesDir) as $file) {
+        foreach (new \DirectoryIterator($fixturesDir) as $file) {
             if ($file->isDot() || !$file->isFile()) {
                 continue;
             }
@@ -124,8 +123,7 @@ abstract class FixtureBasedTestCase extends FilesystemTestCase
      * This is the main test method that will be run for each fixture via the data provider.
      *
      * @dataProvider fixtureProvider
-     * @param string $fixtureName
-     * @param string $code
+     *
      * @param array<string, mixed> $params
      */
     public function testFixture(string $fixtureName, string $code, array $params): void

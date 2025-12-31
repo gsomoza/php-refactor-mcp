@@ -1,14 +1,18 @@
 <?php
+
+declare(strict_types=1);
 // line: 6
 // oldName: $var
 // newName: $value
 
-function foo() {
+function foo()
+{
     $var = 1;
     return $var;
 }
 
-function bar() {
+function bar()
+{
     $var = 2;
     return $var;
 }
