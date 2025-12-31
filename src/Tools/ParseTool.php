@@ -4,37 +4,31 @@ declare(strict_types=1);
 
 namespace Somoza\PhpRefactorMcp\Tools;
 
+use League\Flysystem\FilesystemOperator;
 use PhpMcp\Server\Attributes\McpTool;
 use PhpMcp\Server\Attributes\Schema;
 use PhpParser\Error;
 use PhpParser\ParserFactory;
-use Somoza\PhpRefactorMcp\Services\FilesystemService;
+use Somoza\PhpRefactorMcp\Helpers\FilesystemFactory;
 
 class ParseTool
 {
     private ParserFactory $parserFactory;
-    private FilesystemService $filesystem;
+    private FilesystemOperator $filesystem;
 
-    public function __construct(?FilesystemService $filesystem = null)
+    public function __construct(?FilesystemOperator $filesystem = null)
     {
         $this->parserFactory = new ParserFactory();
-        $this->filesystem = $filesystem ?? self::createDefaultFilesystem();
-    }
-
-    private static function createDefaultFilesystem(): FilesystemService
-    {
-        $adapter = new \League\Flysystem\Local\LocalFilesystemAdapter('/');
-        $filesystem = new \League\Flysystem\Filesystem($adapter);
-        return new FilesystemService($filesystem);
+        $this->filesystem = $filesystem ?? FilesystemFactory::createLocalFilesystem();
     }
 
     /**
-     * Parse a PHP file and return the Abstract Syntax Tree (AST) representation.
-     *
-     * @param string $file Path to the PHP file to parse
-     *
-     * @return array{success: bool, ast?: string, nodeCount?: int, file?: string, error?: string}
-     */
+         * Parse a PHP file and return the Abstract Syntax Tree (AST) representation.
+         *
+         * @param string $file Path to the PHP file to parse
+         *
+         * @return array{success: bool, ast?: string, nodeCount?: int, file?: string, error?: string}
+         */
     #[McpTool(
         name: 'parse_php',
         description: 'Parse a PHP file and return the Abstract Syntax Tree (AST) representation'

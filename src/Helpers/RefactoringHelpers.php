@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Somoza\PhpRefactorMcp\Helpers;
 
+use League\Flysystem\FilesystemOperator;
 use PhpParser\Error;
 use PhpParser\ParserFactory;
 use PhpParser\PrettyPrinter\Standard;
-use Somoza\PhpRefactorMcp\Services\FilesystemService;
 
 class RefactoringHelpers
 {
@@ -76,7 +76,7 @@ class RefactoringHelpers
     /**
      * Apply a refactoring to a file.
      *
-     * @param FilesystemService $filesystem Filesystem service
+     * @param FilesystemOperator $filesystem Filesystem operator
      * @param string $filePath Path to the PHP file
      * @param callable $refactoringFunction Function that takes code and returns refactored code
      * @param string $successMessage Message to return on success
@@ -84,7 +84,7 @@ class RefactoringHelpers
      * @return array{success: bool, code?: string, file?: string, message?: string, error?: string}
      */
     public static function applyFileEdit(
-        FilesystemService $filesystem,
+        FilesystemOperator $filesystem,
         string $filePath,
         callable $refactoringFunction,
         string $successMessage
@@ -98,13 +98,13 @@ class RefactoringHelpers
                 ];
             }
 
-            // Read file contents
+            // Read file contents - throws UnableToReadFile if not readable
             $code = $filesystem->read($filePath);
 
             // Apply refactoring
             $refactoredCode = $refactoringFunction($code);
 
-            // Write back to file
+            // Write back to file - throws UnableToWriteFile if not writable
             $filesystem->write($filePath, $refactoredCode);
 
             return [

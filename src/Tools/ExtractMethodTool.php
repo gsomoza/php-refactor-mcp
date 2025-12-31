@@ -4,29 +4,23 @@ declare(strict_types=1);
 
 namespace Somoza\PhpRefactorMcp\Tools;
 
+use League\Flysystem\FilesystemOperator;
 use PhpMcp\Server\Attributes\McpTool;
 use PhpMcp\Server\Attributes\Schema;
 use PhpParser\NodeTraverser;
+use Somoza\PhpRefactorMcp\Helpers\FilesystemFactory;
 use Somoza\PhpRefactorMcp\Helpers\RefactoringHelpers;
-use Somoza\PhpRefactorMcp\Services\FilesystemService;
 use Somoza\PhpRefactorMcp\Tools\Internal\ExtractMethod\MethodExtractor;
 use Somoza\PhpRefactorMcp\Tools\Internal\ExtractMethod\StatementRangeFinder;
 use Somoza\PhpRefactorMcp\Tools\Internal\ExtractMethod\VariableAnalyzer;
 
 class ExtractMethodTool
 {
-    private FilesystemService $filesystem;
+    private FilesystemOperator $filesystem;
 
-    public function __construct(?FilesystemService $filesystem = null)
+    public function __construct(?FilesystemOperator $filesystem = null)
     {
-        $this->filesystem = $filesystem ?? self::createDefaultFilesystem();
-    }
-
-    private static function createDefaultFilesystem(): FilesystemService
-    {
-        $adapter = new \League\Flysystem\Local\LocalFilesystemAdapter('/');
-        $filesystem = new \League\Flysystem\Filesystem($adapter);
-        return new FilesystemService($filesystem);
+        $this->filesystem = $filesystem ?? FilesystemFactory::createLocalFilesystem();
     }
     /**
      * Extract a block of code into a separate method.

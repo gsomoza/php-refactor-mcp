@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Somoza\PhpRefactorMcp\Tests\Support;
 
 use League\Flysystem\Filesystem;
+use League\Flysystem\FilesystemOperator;
 use League\Flysystem\InMemory\InMemoryFilesystemAdapter;
+use PhpParser\Error;
 use PHPUnit\Framework\TestCase;
-use Somoza\PhpRefactorMcp\Services\FilesystemService;
+use Somoza\PhpRefactorMcp\Helpers\RefactoringHelpers;
 use Spatie\Snapshots\MatchesSnapshots;
 
 abstract class FilesystemTestCase extends TestCase
@@ -15,7 +17,7 @@ abstract class FilesystemTestCase extends TestCase
     use MatchesSnapshots;
 
     /** @phpstan-ignore-next-line property.uninitializedProperty */
-    protected FilesystemService $filesystem;
+    protected FilesystemOperator $filesystem;
 
     protected function setUp(): void
     {
@@ -23,8 +25,7 @@ abstract class FilesystemTestCase extends TestCase
 
         // Create in-memory filesystem for testing
         $adapter = new InMemoryFilesystemAdapter();
-        $flysystem = new Filesystem($adapter);
-        $this->filesystem = new FilesystemService($flysystem);
+        $this->filesystem = new Filesystem($adapter);
     }
 
     /**
@@ -66,23 +67,14 @@ abstract class FilesystemTestCase extends TestCase
 
     /**
      * Assert that the given code is valid PHP (can be parsed without errors).
+     * Uses PHP Parser library instead of external php -l command.
      */
     protected function assertValidPhp(string $code): void
     {
-        // Write to a temporary file and use php -l to lint it
-        $tempFile = tempnam(sys_get_temp_dir(), 'php_lint_');
-        file_put_contents($tempFile, $code);
-
-        $output = [];
-        $returnCode = 0;
-        exec("php -l " . escapeshellarg($tempFile) . " 2>&1", $output, $returnCode);
-
-        unlink($tempFile);
-
-        $this->assertEquals(
-            0,
-            $returnCode,
-            "Code is not valid PHP:\n" . implode("\n", $output) . "\n\nCode:\n" . $code
-        );
+        try {
+            RefactoringHelpers::parseCode($code);
+        } catch (Error $e) {
+            $this->fail("Code is not valid PHP: " . $e->getMessage() . "\n\nCode:\n" . $code);
+        }
     }
 }

@@ -4,39 +4,34 @@ declare(strict_types=1);
 
 namespace Somoza\PhpRefactorMcp\Tools;
 
+use League\Flysystem\FilesystemOperator;
 use PhpMcp\Server\Attributes\McpTool;
 use PhpMcp\Server\Attributes\Schema;
 use PhpParser\NodeTraverser;
+use Somoza\PhpRefactorMcp\Helpers\FilesystemFactory;
 use Somoza\PhpRefactorMcp\Helpers\RefactoringHelpers;
-use Somoza\PhpRefactorMcp\Services\FilesystemService;
 use Somoza\PhpRefactorMcp\Tools\Internal\RenameVariable\ScopeFinder;
 use Somoza\PhpRefactorMcp\Tools\Internal\RenameVariable\VariableRenamer;
 
 class RenameVariableTool
 {
-    private FilesystemService $filesystem;
+    private FilesystemOperator $filesystem;
 
-    public function __construct(?FilesystemService $filesystem = null)
+    public function __construct(?FilesystemOperator $filesystem = null)
     {
-        $this->filesystem = $filesystem ?? self::createDefaultFilesystem();
+        $this->filesystem = $filesystem ?? FilesystemFactory::createLocalFilesystem();
     }
 
-    private static function createDefaultFilesystem(): FilesystemService
-    {
-        $adapter = new \League\Flysystem\Local\LocalFilesystemAdapter('/');
-        $filesystem = new \League\Flysystem\Filesystem($adapter);
-        return new FilesystemService($filesystem);
-    }
     /**
-     * Rename a variable throughout its scope.
-     *
-     * @param string $file Path to the PHP file
-     * @param string $selectionRange Range in format 'line:column' or 'line'
-     * @param string $oldName Current variable name (with or without $ prefix)
-     * @param string $newName New variable name (with or without $ prefix)
-     *
-     * @return array{success: bool, code?: string, file?: string, message?: string, error?: string}
-     */
+         * Rename a variable throughout its scope.
+         *
+         * @param string $file Path to the PHP file
+         * @param string $selectionRange Range in format 'line:column' or 'line'
+         * @param string $oldName Current variable name (with or without $ prefix)
+         * @param string $newName New variable name (with or without $ prefix)
+         *
+         * @return array{success: bool, code?: string, file?: string, message?: string, error?: string}
+         */
     #[McpTool(
         name: 'rename_variable',
         description: 'Rename a variable throughout its scope'
