@@ -53,7 +53,8 @@ class ExtractMethodTool
         string $methodName
     ): array {
         // Parse the selection range
-        if (!RefactoringHelpers::tryParseRange($selectionRange, $startLine, $startColumn, $endLine, $endColumn)) {
+        $range = RefactoringHelpers::parseRange($selectionRange);
+        if ($range === null) {
             return [
                 'success' => false,
                 'error' => 'Invalid selection range format. Use \'startLine:startColumn-endLine:endColumn\' or \'startLine-endLine\'',
@@ -68,17 +69,17 @@ class ExtractMethodTool
             ];
         }
 
-        if ($startLine > $endLine) {
+        if ($range->startLine > $range->endLine) {
             return [
                 'success' => false,
-                'error' => "Start line ({$startLine}) must be less than or equal to end line ({$endLine})",
+                'error' => "Start line ({$range->startLine}) must be less than or equal to end line ({$range->endLine})",
             ];
         }
 
         return RefactoringHelpers::applyFileEdit(
             $this->filesystem,
             $file,
-            fn($code) => $this->extractMethodInSource($code, $startLine, $endLine, $methodName),
+            fn($code) => $this->extractMethodInSource($code, $range->startLine, $range->endLine, $methodName),
             "Successfully extracted method '{$methodName}' from {$selectionRange} in {$file}"
         );
     }

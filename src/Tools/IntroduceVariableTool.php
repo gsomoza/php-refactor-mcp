@@ -53,7 +53,8 @@ class IntroduceVariableTool
         string $variableName
     ): array {
         // Parse the selection range
-        if (!RefactoringHelpers::tryParseRange($selectionRange, $startLine, $startColumn, $endLine, $endColumn)) {
+        $range = RefactoringHelpers::parseRange($selectionRange);
+        if ($range === null) {
             return [
                 'success' => false,
                 'error' => 'Invalid selection range format. Use \'startLine:startColumn-endLine:endColumn\', \'line:column\', or \'line\'',
@@ -79,7 +80,14 @@ class IntroduceVariableTool
         return RefactoringHelpers::applyFileEdit(
             $this->filesystem,
             $file,
-            fn($code) => $this->introduceVariableInSource($code, $startLine, $startColumn ?? 0, $endLine, $endColumn ?? 0, $variableName),
+            fn($code) => $this->introduceVariableInSource(
+                $code,
+                $range->startLine,
+                $range->startColumn,
+                $range->endLine,
+                $range->endColumn,
+                $variableName
+            ),
             "Successfully introduced variable '\${$variableName}' from {$selectionRange} in {$file}"
         );
     }

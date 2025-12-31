@@ -53,7 +53,8 @@ class ExtractVariableTool
         string $variableName
     ): array {
         // Parse the selection range (line and optional column)
-        if (!RefactoringHelpers::tryParseRange($selectionRange, $line, $column, $endLine, $endColumn)) {
+        $range = RefactoringHelpers::parseRange($selectionRange);
+        if ($range === null) {
             return [
                 'success' => false,
                 'error' => "Invalid selection range format. Use 'line:column' or 'line'",
@@ -79,8 +80,8 @@ class ExtractVariableTool
         return RefactoringHelpers::applyFileEdit(
             $this->filesystem,
             $file,
-            fn($code) => $this->extractVariableInSource($code, $line, $column ?? 0, $variableName),
-            "Successfully extracted variable '\${$variableName}' at line {$line} in {$file}"
+            fn($code) => $this->extractVariableInSource($code, $range->startLine, $range->startColumn, $variableName),
+            "Successfully extracted variable '\${$variableName}' at line {$range->startLine} in {$file}"
         );
     }
 

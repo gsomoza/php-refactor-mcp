@@ -8,11 +8,24 @@ use League\Flysystem\FilesystemOperator;
 use PhpParser\Error;
 use PhpParser\ParserFactory;
 use PhpParser\PrettyPrinter\Standard;
+use Somoza\PhpRefactorMcp\ValueObjects\SelectionRange;
 
 class RefactoringHelpers
 {
     /**
+     * Parse a selection range string and return a SelectionRange value object.
+     *
+     * @return SelectionRange|null Returns SelectionRange on success, null on failure
+     */
+    public static function parseRange(string $selectionRange): ?SelectionRange
+    {
+        return SelectionRange::tryParse($selectionRange);
+    }
+
+    /**
      * Parse a selection range string in format "startLine:startColumn-endLine:endColumn".
+     *
+     * @deprecated Use parseRange() instead which returns a SelectionRange value object
      *
      * @param string $selectionRange Range string
      * @param int $startLine Output parameter for start line
@@ -29,48 +42,18 @@ class RefactoringHelpers
         ?int &$endLine,
         ?int &$endColumn
     ): bool {
-        // Format: "startLine:startColumn-endLine:endColumn"
-        // Also support simpler formats:
-        // - "startLine-endLine" (line range only)
-        // - "line:column" (single position)
+        $range = self::parseRange($selectionRange);
 
-        if (preg_match('/^(\d+):(\d+)-(\d+):(\d+)$/', $selectionRange, $matches)) {
-            // Full format: "startLine:startColumn-endLine:endColumn"
-            $startLine = (int) $matches[1];
-            $startColumn = (int) $matches[2];
-            $endLine = (int) $matches[3];
-            $endColumn = (int) $matches[4];
-            return true;
+        if ($range === null) {
+            return false;
         }
 
-        if (preg_match('/^(\d+)-(\d+)$/', $selectionRange, $matches)) {
-            // Line range only: "startLine-endLine"
-            $startLine = (int) $matches[1];
-            $startColumn = 0;
-            $endLine = (int) $matches[2];
-            $endColumn = 0;
-            return true;
-        }
+        $startLine = $range->startLine;
+        $startColumn = $range->startColumn;
+        $endLine = $range->endLine;
+        $endColumn = $range->endColumn;
 
-        if (preg_match('/^(\d+):(\d+)$/', $selectionRange, $matches)) {
-            // Single position: "line:column"
-            $startLine = (int) $matches[1];
-            $startColumn = (int) $matches[2];
-            $endLine = $startLine;
-            $endColumn = $startColumn;
-            return true;
-        }
-
-        if (preg_match('/^(\d+)$/', $selectionRange, $matches)) {
-            // Single line: "line"
-            $startLine = (int) $matches[1];
-            $startColumn = 0;
-            $endLine = $startLine;
-            $endColumn = 0;
-            return true;
-        }
-
-        return false;
+        return true;
     }
 
     /**

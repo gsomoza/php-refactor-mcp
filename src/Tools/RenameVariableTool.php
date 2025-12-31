@@ -59,7 +59,8 @@ class RenameVariableTool
         string $newName
     ): array {
         // Parse the selection range
-        if (!RefactoringHelpers::tryParseRange($selectionRange, $line, $column, $endLine, $endColumn)) {
+        $range = RefactoringHelpers::parseRange($selectionRange);
+        if ($range === null) {
             return [
                 'success' => false,
                 'error' => "Invalid selection range format. Use 'line:column' or 'line'",
@@ -88,7 +89,7 @@ class RenameVariableTool
         return RefactoringHelpers::applyFileEdit(
             $this->filesystem,
             $file,
-            fn($code) => $this->renameVariableInSource($code, $line, $oldName, $newName),
+            fn($code) => $this->renameVariableInSource($code, $range->startLine, $oldName, $newName),
             "Successfully renamed variable '\${$oldName}' to '\${$newName}' in {$file}"
         );
     }
