@@ -1,10 +1,11 @@
 <?php
+
 // line: 6
 // oldName: $oldVar
 // newName: $newVar
-
-function test() {
-    $oldVar = 1;
-    $result = $oldVar + 2;
+function test()
+{
+    $newVar = 1;
+    $result = $newVar + 2;
     return $result;
 }

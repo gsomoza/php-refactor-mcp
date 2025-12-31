@@ -1,0 +1,6 @@
+<?php
+
+$value = $obj->method();
+// position: 5:11
+// variableName: $value
+$result = $value;

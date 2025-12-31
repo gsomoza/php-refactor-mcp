@@ -1,0 +1,6 @@
+<?php
+
+$sum = 1 + 2;
+// position: 5:11
+// variableName: $sum
+$result = $sum;

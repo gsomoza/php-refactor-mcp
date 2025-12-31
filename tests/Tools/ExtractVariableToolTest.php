@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Somoza\PhpRefactorMcp\Tests\Tools;
 
-use Somoza\PhpRefactorMcp\Tests\Support\FilesystemTestCase;
+use Somoza\PhpRefactorMcp\Tests\Support\FixtureBasedTestCase;
 use Somoza\PhpRefactorMcp\Tools\ExtractVariableTool;
 
-class ExtractVariableToolTest extends FilesystemTestCase
+class ExtractVariableToolTest extends FixtureBasedTestCase
 {
     private ExtractVariableTool $tool;
 
@@ -17,121 +17,31 @@ class ExtractVariableToolTest extends FilesystemTestCase
         $this->tool = new ExtractVariableTool($this->filesystem);
     }
 
-
-
-    public function testExtractSimpleExpression(): void
+    protected function getToolName(): string
     {
-        $code = '<?php
-$result = 1 + 2;
-';
-        $file = $this->createFile('/test.php', $code);
-        $result = $this->tool->extract($file, '2:11', '$sum');
-
-        $this->assertTrue($result['success']);
-        $this->assertArrayHasKey('code', $result);
-        $this->assertStringContainsString('$sum = 1 + 2', $result['code']);
-        $this->assertStringContainsString('$result = $sum', $result['code']);
-
-        // Snapshot test: verify full output and valid PHP
-        $this->assertValidPhpSnapshot($result['code']);
+        return 'ExtractVariableTool';
     }
 
-    public function testExtractExpressionWithoutDollarSign(): void
+    /**
+     * @param string $fixtureName
+     * @param string $code
+     * @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
+    protected function executeTool(string $fixtureName, string $code, array $params): array
     {
-        $code = '<?php
-$result = 5 * 10;
-';
+        // Create a virtual file with the fixture code
         $file = $this->createFile('/test.php', $code);
-        $result = $this->tool->extract($file, '2:11', 'product');
 
-        $this->assertTrue($result['success']);
-        $this->assertStringContainsString('$product = 5 * 10', $result['code']);
-        $this->assertStringContainsString('$result = $product', $result['code']);
-
-        // Snapshot test: verify full output and valid PHP
-        $this->assertValidPhpSnapshot($result['code']);
+        // Execute the tool with parameters from the fixture
+        return $this->tool->extract(
+            $file,
+            $params['position'] ?? '1:1',
+            $params['variableName'] ?? '$var'
+        );
     }
 
-    public function testExtractExpressionInFunction(): void
-    {
-        $code = '<?php
-function calculate() {
-    return 10 + 20;
-}';
-        $file = $this->createFile('/test.php', $code);
-        $result = $this->tool->extract($file, '3:12', '$sum');
-
-        $this->assertTrue($result['success']);
-        $this->assertStringContainsString('$sum = 10 + 20', $result['code']);
-        $this->assertStringContainsString('return $sum', $result['code']);
-
-        // Snapshot test: verify full output and valid PHP
-        $this->assertValidPhpSnapshot($result['code']);
-    }
-
-    public function testExtractExpressionInMethod(): void
-    {
-        $code = '<?php
-class MyClass {
-    public function calculate() {
-        $x = 5 * 3;
-        return $x;
-    }
-}';
-        $file = $this->createFile('/test.php', $code);
-        $result = $this->tool->extract($file, '4:14', '$product');
-
-        $this->assertTrue($result['success']);
-        $this->assertStringContainsString('$product = 5 * 3', $result['code']);
-        $this->assertStringContainsString('$x = $product', $result['code']);
-    }
-
-    public function testExtractComplexExpression(): void
-    {
-        $code = '<?php
-$total = ($a + $b) * ($c - $d);
-';
-        $file = $this->createFile('/test.php', $code);
-        $result = $this->tool->extract($file, '2:10', '$intermediate');
-
-        $this->assertTrue($result['success']);
-        $this->assertArrayHasKey('code', $result);
-        // Should extract an expression and assign it to a variable
-        $this->assertStringContainsString('$intermediate', $result['code']);
-        $this->assertStringContainsString('$total', $result['code']);
-
-        // Snapshot test: verify full output and valid PHP
-        $this->assertValidPhpSnapshot($result['code']);
-    }
-
-    public function testExtractMethodCall(): void
-    {
-        $code = '<?php
-$result = $obj->method();
-';
-        $file = $this->createFile('/test.php', $code);
-        $result = $this->tool->extract($file, '2:11', '$value');
-
-        $this->assertTrue($result['success']);
-        $this->assertStringContainsString('$value = $obj->method()', $result['code']);
-        $this->assertStringContainsString('$result = $value', $result['code']);
-    }
-
-    public function testExtractArrayAccess(): void
-    {
-        $code = '<?php
-$value = $array[0];
-';
-        $file = $this->createFile('/test.php', $code);
-        $result = $this->tool->extract($file, '2:10', '$element');
-
-        $this->assertTrue($result['success']);
-        $this->assertStringContainsString('$element = $array[0]', $result['code']);
-        $this->assertStringContainsString('$value = $element', $result['code']);
-
-        // Snapshot test: verify full output and valid PHP
-        $this->assertValidPhpSnapshot($result['code']);
-    }
+    // Error cases - traditional test methods
 
     public function testExtractFileNotFound(): void
     {
@@ -162,7 +72,6 @@ $value = $array[0];
         $this->assertArrayHasKey('error', $result);
         $this->assertStringContainsString('Parse error', $result['error']);
     }
-
 
     public function testExtractInvalidLineNumber(): void
     {

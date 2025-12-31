@@ -1,0 +1,6 @@
+<?php
+
+$intermediate = ($a + $b) * ($c - $d);
+// position: 5:10
+// variableName: $intermediate
+$total = $intermediate;

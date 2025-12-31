@@ -1,0 +1,19 @@
+<?php
+
+// range: 9-9
+// methodName: add
+class Calculator
+{
+    public function calculate()
+    {
+        $x = 10;
+        $y = 20;
+        $result = $this->add($x, $y);
+        echo $result;
+    }
+    private function add($x, $y)
+    {
+        $result = $x + $y;
+        return $result;
+    }
+}

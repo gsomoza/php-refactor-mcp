@@ -1,0 +1,14 @@
+<?php
+
+// line: 7
+// oldName: $temp
+// newName: $value
+class MyClass
+{
+    public function myMethod()
+    {
+        $value = 5;
+        $result = $value * 2;
+        return $result;
+    }
+}
