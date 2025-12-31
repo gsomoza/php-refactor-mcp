@@ -10,11 +10,11 @@ use DirectoryIterator;
  * Base test case for fixture-based testing.
  *
  * This class provides infrastructure for discovering and running tests based on fixture files.
- * Fixtures are organized in directories under tests/Fixtures/{ToolName}/{TestCaseName}/
+ * Fixtures are organized as files under tests/Fixtures/{ToolName}/
  *
- * Each test case directory should contain:
- * - input.php: The PHP code to test (optional for error cases)
- * - test.json: Metadata about the test (parameters, expected success/failure)
+ * Each test case consists of:
+ * - {TestCase}.php: The PHP code to test (optional for error cases)
+ * - {TestCase}.json: Metadata about the test (parameters, expected success/failure)
  */
 abstract class FixtureBasedTestCase extends FilesystemTestCase
 {
@@ -46,13 +46,19 @@ abstract class FixtureBasedTestCase extends FilesystemTestCase
             return;
         }
 
-        foreach (new DirectoryIterator($fixturesDir) as $testCaseDir) {
-            if ($testCaseDir->isDot() || !$testCaseDir->isDir()) {
+        // Find all .json files in the fixtures directory
+        foreach (new DirectoryIterator($fixturesDir) as $file) {
+            if ($file->isDot() || !$file->isFile()) {
                 continue;
             }
 
-            $testCaseName = $testCaseDir->getFilename();
-            $fixture = self::loadFixture($fixturesDir . '/' . $testCaseName);
+            // Only process .json files
+            if ($file->getExtension() !== 'json') {
+                continue;
+            }
+
+            $testCaseName = $file->getBasename('.json');
+            $fixture = self::loadFixture($fixturesDir, $testCaseName);
 
             if ($fixture !== null) {
                 yield $testCaseName => ['fixture' => $fixture];
@@ -72,32 +78,32 @@ abstract class FixtureBasedTestCase extends FilesystemTestCase
     }
 
     /**
-     * Load a fixture from a directory.
+     * Load a fixture from files.
      *
      * @return array<string, mixed>|null
      */
-    protected static function loadFixture(string $fixtureDir): ?array
+    protected static function loadFixture(string $fixturesDir, string $testCaseName): ?array
     {
-        $testJsonPath = $fixtureDir . '/test.json';
-        $inputPhpPath = $fixtureDir . '/input.php';
+        $jsonPath = $fixturesDir . '/' . $testCaseName . '.json';
+        $phpPath = $fixturesDir . '/' . $testCaseName . '.php';
 
-        if (!file_exists($testJsonPath)) {
+        if (!file_exists($jsonPath)) {
             return null;
         }
 
-        $testData = json_decode(file_get_contents($testJsonPath), true);
+        $testData = json_decode(file_get_contents($jsonPath), true);
         if (!is_array($testData)) {
             return null;
         }
 
-        // Load input.php if it exists
+        // Load .php file if it exists
         $inputCode = null;
-        if (file_exists($inputPhpPath)) {
-            $inputCode = file_get_contents($inputPhpPath);
+        if (file_exists($phpPath)) {
+            $inputCode = file_get_contents($phpPath);
         }
 
         return [
-            'name' => basename($fixtureDir),
+            'name' => $testCaseName,
             'input' => $inputCode,
             'params' => $testData['params'] ?? [],
             'expectSuccess' => $testData['expectSuccess'] ?? true,
