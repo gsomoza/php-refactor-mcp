@@ -1,12 +1,9 @@
 <?php
-
-declare(strict_types=1);
 // line: 6
 // oldName: $oldVar
 // newName: $newVar
 
-function test()
-{
+function test() {
     $oldVar = 1;
     $result = $oldVar + 2;
     return $result;

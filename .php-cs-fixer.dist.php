@@ -10,6 +10,7 @@ $finder = PhpCsFixer\Finder::create()
     ->append([
         __DIR__ . '/bin/php-refactor-mcp',
     ])
+    ->exclude('Fixtures')
     ->name('*.php')
     ->notName('*.blade.php')
     ->ignoreDotFiles(true)
