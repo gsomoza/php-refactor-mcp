@@ -8,12 +8,26 @@ use PhpMcp\Server\Attributes\McpTool;
 use PhpMcp\Server\Attributes\Schema;
 use PhpParser\NodeTraverser;
 use Somoza\PhpRefactorMcp\Helpers\RefactoringHelpers;
+use Somoza\PhpRefactorMcp\Services\FilesystemService;
 use Somoza\PhpRefactorMcp\Tools\Internal\ExtractMethod\MethodExtractor;
 use Somoza\PhpRefactorMcp\Tools\Internal\ExtractMethod\StatementRangeFinder;
 use Somoza\PhpRefactorMcp\Tools\Internal\ExtractMethod\VariableAnalyzer;
 
 class ExtractMethodTool
 {
+    private FilesystemService $filesystem;
+
+    public function __construct(?FilesystemService $filesystem = null)
+    {
+        $this->filesystem = $filesystem ?? self::createDefaultFilesystem();
+    }
+
+    private static function createDefaultFilesystem(): FilesystemService
+    {
+        $adapter = new \League\Flysystem\Local\LocalFilesystemAdapter('/');
+        $filesystem = new \League\Flysystem\Filesystem($adapter);
+        return new FilesystemService($filesystem);
+    }
     /**
      * Extract a block of code into a separate method.
      *
@@ -68,6 +82,7 @@ class ExtractMethodTool
         }
 
         return RefactoringHelpers::applyFileEdit(
+            $this->filesystem,
             $file,
             fn($code) => $this->extractMethodInSource($code, $startLine, $endLine, $methodName),
             "Successfully extracted method '{$methodName}' from {$selectionRange} in {$file}"

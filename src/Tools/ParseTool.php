@@ -8,14 +8,24 @@ use PhpMcp\Server\Attributes\McpTool;
 use PhpMcp\Server\Attributes\Schema;
 use PhpParser\Error;
 use PhpParser\ParserFactory;
+use Somoza\PhpRefactorMcp\Services\FilesystemService;
 
 class ParseTool
 {
     private ParserFactory $parserFactory;
+    private FilesystemService $filesystem;
 
-    public function __construct()
+    public function __construct(?FilesystemService $filesystem = null)
     {
         $this->parserFactory = new ParserFactory();
+        $this->filesystem = $filesystem ?? self::createDefaultFilesystem();
+    }
+
+    private static function createDefaultFilesystem(): FilesystemService
+    {
+        $adapter = new \League\Flysystem\Local\LocalFilesystemAdapter('/');
+        $filesystem = new \League\Flysystem\Filesystem($adapter);
+        return new FilesystemService($filesystem);
     }
 
     /**
@@ -38,29 +48,15 @@ class ParseTool
     ): array {
         try {
             // Check if file exists
-            if (!file_exists($file)) {
+            if (!$this->filesystem->fileExists($file)) {
                 return [
                     'success' => false,
                     'error' => "File not found: {$file}",
                 ];
             }
 
-            // Check if file is readable
-            if (!is_readable($file)) {
-                return [
-                    'success' => false,
-                    'error' => "File is not readable: {$file}",
-                ];
-            }
-
             // Read file contents
-            $code = file_get_contents($file);
-            if ($code === false) {
-                return [
-                    'success' => false,
-                    'error' => "Failed to read file: {$file}",
-                ];
-            }
+            $code = $this->filesystem->read($file);
 
             $parser = $this->parserFactory->createForNewestSupportedVersion();
             $ast = $parser->parse($code);

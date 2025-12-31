@@ -8,11 +8,25 @@ use PhpMcp\Server\Attributes\McpTool;
 use PhpMcp\Server\Attributes\Schema;
 use PhpParser\NodeTraverser;
 use Somoza\PhpRefactorMcp\Helpers\RefactoringHelpers;
+use Somoza\PhpRefactorMcp\Services\FilesystemService;
 use Somoza\PhpRefactorMcp\Tools\Internal\ExtractVariable\ExpressionExtractor;
 use Somoza\PhpRefactorMcp\Tools\Internal\ExtractVariable\ExpressionFinder;
 
 class ExtractVariableTool
 {
+    private FilesystemService $filesystem;
+
+    public function __construct(?FilesystemService $filesystem = null)
+    {
+        $this->filesystem = $filesystem ?? self::createDefaultFilesystem();
+    }
+
+    private static function createDefaultFilesystem(): FilesystemService
+    {
+        $adapter = new \League\Flysystem\Local\LocalFilesystemAdapter('/');
+        $filesystem = new \League\Flysystem\Filesystem($adapter);
+        return new FilesystemService($filesystem);
+    }
     /**
      * Extract an expression into a named variable.
      *
@@ -68,6 +82,7 @@ class ExtractVariableTool
         }
 
         return RefactoringHelpers::applyFileEdit(
+            $this->filesystem,
             $file,
             fn($code) => $this->extractVariableInSource($code, $line, $column ?? 0, $variableName),
             "Successfully extracted variable '\${$variableName}' at line {$line} in {$file}"

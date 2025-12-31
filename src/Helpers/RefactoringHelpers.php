@@ -7,6 +7,7 @@ namespace Somoza\PhpRefactorMcp\Helpers;
 use PhpParser\Error;
 use PhpParser\ParserFactory;
 use PhpParser\PrettyPrinter\Standard;
+use Somoza\PhpRefactorMcp\Services\FilesystemService;
 
 class RefactoringHelpers
 {
@@ -75,6 +76,7 @@ class RefactoringHelpers
     /**
      * Apply a refactoring to a file.
      *
+     * @param FilesystemService $filesystem Filesystem service
      * @param string $filePath Path to the PHP file
      * @param callable $refactoringFunction Function that takes code and returns refactored code
      * @param string $successMessage Message to return on success
@@ -82,46 +84,28 @@ class RefactoringHelpers
      * @return array{success: bool, code?: string, file?: string, message?: string, error?: string}
      */
     public static function applyFileEdit(
+        FilesystemService $filesystem,
         string $filePath,
         callable $refactoringFunction,
         string $successMessage
     ): array {
         try {
             // Check if file exists
-            if (!file_exists($filePath)) {
+            if (!$filesystem->fileExists($filePath)) {
                 return [
                     'success' => false,
                     'error' => "File not found: {$filePath}",
                 ];
             }
 
-            // Check if file is readable
-            if (!is_readable($filePath)) {
-                return [
-                    'success' => false,
-                    'error' => "File is not readable: {$filePath}",
-                ];
-            }
-
             // Read file contents
-            $code = file_get_contents($filePath);
-            if ($code === false) {
-                return [
-                    'success' => false,
-                    'error' => "Failed to read file: {$filePath}",
-                ];
-            }
+            $code = $filesystem->read($filePath);
 
             // Apply refactoring
             $refactoredCode = $refactoringFunction($code);
 
             // Write back to file
-            if (file_put_contents($filePath, $refactoredCode) === false) {
-                return [
-                    'success' => false,
-                    'error' => "Failed to write to file: {$filePath}",
-                ];
-            }
+            $filesystem->write($filePath, $refactoredCode);
 
             return [
                 'success' => true,

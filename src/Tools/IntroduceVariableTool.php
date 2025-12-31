@@ -8,11 +8,25 @@ use PhpMcp\Server\Attributes\McpTool;
 use PhpMcp\Server\Attributes\Schema;
 use PhpParser\NodeTraverser;
 use Somoza\PhpRefactorMcp\Helpers\RefactoringHelpers;
+use Somoza\PhpRefactorMcp\Services\FilesystemService;
 use Somoza\PhpRefactorMcp\Tools\Internal\IntroduceVariable\ExpressionSelector;
 use Somoza\PhpRefactorMcp\Tools\Internal\IntroduceVariable\VariableIntroducer;
 
 class IntroduceVariableTool
 {
+    private FilesystemService $filesystem;
+
+    public function __construct(?FilesystemService $filesystem = null)
+    {
+        $this->filesystem = $filesystem ?? self::createDefaultFilesystem();
+    }
+
+    private static function createDefaultFilesystem(): FilesystemService
+    {
+        $adapter = new \League\Flysystem\Local\LocalFilesystemAdapter('/');
+        $filesystem = new \League\Flysystem\Filesystem($adapter);
+        return new FilesystemService($filesystem);
+    }
     /**
      * Introduce a new variable from selected expression.
      *
@@ -68,6 +82,7 @@ class IntroduceVariableTool
         }
 
         return RefactoringHelpers::applyFileEdit(
+            $this->filesystem,
             $file,
             fn($code) => $this->introduceVariableInSource($code, $startLine, $startColumn ?? 0, $endLine, $endColumn ?? 0, $variableName),
             "Successfully introduced variable '\${$variableName}' from {$selectionRange} in {$file}"

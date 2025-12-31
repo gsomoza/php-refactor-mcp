@@ -8,11 +8,25 @@ use PhpMcp\Server\Attributes\McpTool;
 use PhpMcp\Server\Attributes\Schema;
 use PhpParser\NodeTraverser;
 use Somoza\PhpRefactorMcp\Helpers\RefactoringHelpers;
+use Somoza\PhpRefactorMcp\Services\FilesystemService;
 use Somoza\PhpRefactorMcp\Tools\Internal\RenameVariable\ScopeFinder;
 use Somoza\PhpRefactorMcp\Tools\Internal\RenameVariable\VariableRenamer;
 
 class RenameVariableTool
 {
+    private FilesystemService $filesystem;
+
+    public function __construct(?FilesystemService $filesystem = null)
+    {
+        $this->filesystem = $filesystem ?? self::createDefaultFilesystem();
+    }
+
+    private static function createDefaultFilesystem(): FilesystemService
+    {
+        $adapter = new \League\Flysystem\Local\LocalFilesystemAdapter('/');
+        $filesystem = new \League\Flysystem\Filesystem($adapter);
+        return new FilesystemService($filesystem);
+    }
     /**
      * Rename a variable throughout its scope.
      *
@@ -77,6 +91,7 @@ class RenameVariableTool
         }
 
         return RefactoringHelpers::applyFileEdit(
+            $this->filesystem,
             $file,
             fn($code) => $this->renameVariableInSource($code, $line, $oldName, $newName),
             "Successfully renamed variable '\${$oldName}' to '\${$newName}' in {$file}"

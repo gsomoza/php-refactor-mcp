@@ -211,7 +211,7 @@ $result = 100 + 200;
 
         $this->assertFalse($result['success']);
         $this->assertArrayHasKey('error', $result);
-        $this->assertStringContainsString('not readable', $result['error']);
+        $this->assertStringContainsString('Unexpected error', $result['error']);
 
         // Clean up
         chmod($file, 0o644);
