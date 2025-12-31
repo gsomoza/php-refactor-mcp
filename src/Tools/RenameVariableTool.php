@@ -4,25 +4,35 @@ declare(strict_types=1);
 
 namespace Somoza\PhpRefactorMcp\Tools;
 
+use League\Flysystem\FilesystemOperator;
 use PhpMcp\Server\Attributes\McpTool;
 use PhpMcp\Server\Attributes\Schema;
 use PhpParser\NodeTraverser;
+use Somoza\PhpRefactorMcp\Helpers\FilesystemFactory;
 use Somoza\PhpRefactorMcp\Helpers\RefactoringHelpers;
 use Somoza\PhpRefactorMcp\Tools\Internal\RenameVariable\ScopeFinder;
 use Somoza\PhpRefactorMcp\Tools\Internal\RenameVariable\VariableRenamer;
+use Somoza\PhpRefactorMcp\ValueObjects\SelectionRange;
 
 class RenameVariableTool
 {
+    private FilesystemOperator $filesystem;
+
+    public function __construct(?FilesystemOperator $filesystem = null)
+    {
+        $this->filesystem = $filesystem ?? FilesystemFactory::createLocalFilesystem();
+    }
+
     /**
-     * Rename a variable throughout its scope.
-     *
-     * @param string $file Path to the PHP file
-     * @param string $selectionRange Range in format 'line:column' or 'line'
-     * @param string $oldName Current variable name (with or without $ prefix)
-     * @param string $newName New variable name (with or without $ prefix)
-     *
-     * @return array{success: bool, code?: string, file?: string, message?: string, error?: string}
-     */
+         * Rename a variable throughout its scope.
+         *
+         * @param string $file Path to the PHP file
+         * @param string $selectionRange Range in format 'line:column' or 'line'
+         * @param string $oldName Current variable name (with or without $ prefix)
+         * @param string $newName New variable name (with or without $ prefix)
+         *
+         * @return array{success: bool, code?: string, file?: string, message?: string, error?: string}
+         */
     #[McpTool(
         name: 'rename_variable',
         description: 'Rename a variable throughout its scope'
@@ -50,7 +60,8 @@ class RenameVariableTool
         string $newName
     ): array {
         // Parse the selection range
-        if (!RefactoringHelpers::tryParseRange($selectionRange, $line, $column, $endLine, $endColumn)) {
+        $range = SelectionRange::tryParse($selectionRange);
+        if ($range === null) {
             return [
                 'success' => false,
                 'error' => "Invalid selection range format. Use 'line:column' or 'line'",
@@ -77,8 +88,9 @@ class RenameVariableTool
         }
 
         return RefactoringHelpers::applyFileEdit(
+            $this->filesystem,
             $file,
-            fn($code) => $this->renameVariableInSource($code, $line, $oldName, $newName),
+            fn($code) => $this->renameVariableInSource($code, $range->startLine, $oldName, $newName),
             "Successfully renamed variable '\${$oldName}' to '\${$newName}' in {$file}"
         );
     }

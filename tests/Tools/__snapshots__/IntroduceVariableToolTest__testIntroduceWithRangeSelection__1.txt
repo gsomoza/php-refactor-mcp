@@ -1,0 +1,4 @@
+<?php
+
+$sum = 100 + 200;
+$result = $sum;

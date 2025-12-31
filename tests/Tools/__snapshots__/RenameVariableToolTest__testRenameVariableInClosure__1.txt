@@ -1,0 +1,6 @@
+<?php
+
+$closure = function () {
+    $num = 10;
+    return $num * 2;
+};

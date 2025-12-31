@@ -1,0 +1,4 @@
+<?php
+
+$value = $obj->method();
+$result = $value;

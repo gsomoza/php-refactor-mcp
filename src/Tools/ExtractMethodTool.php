@@ -4,16 +4,25 @@ declare(strict_types=1);
 
 namespace Somoza\PhpRefactorMcp\Tools;
 
+use League\Flysystem\FilesystemOperator;
 use PhpMcp\Server\Attributes\McpTool;
 use PhpMcp\Server\Attributes\Schema;
 use PhpParser\NodeTraverser;
+use Somoza\PhpRefactorMcp\Helpers\FilesystemFactory;
 use Somoza\PhpRefactorMcp\Helpers\RefactoringHelpers;
 use Somoza\PhpRefactorMcp\Tools\Internal\ExtractMethod\MethodExtractor;
 use Somoza\PhpRefactorMcp\Tools\Internal\ExtractMethod\StatementRangeFinder;
 use Somoza\PhpRefactorMcp\Tools\Internal\ExtractMethod\VariableAnalyzer;
+use Somoza\PhpRefactorMcp\ValueObjects\SelectionRange;
 
 class ExtractMethodTool
 {
+    private FilesystemOperator $filesystem;
+
+    public function __construct(?FilesystemOperator $filesystem = null)
+    {
+        $this->filesystem = $filesystem ?? FilesystemFactory::createLocalFilesystem();
+    }
     /**
      * Extract a block of code into a separate method.
      *
@@ -45,7 +54,8 @@ class ExtractMethodTool
         string $methodName
     ): array {
         // Parse the selection range
-        if (!RefactoringHelpers::tryParseRange($selectionRange, $startLine, $startColumn, $endLine, $endColumn)) {
+        $range = SelectionRange::tryParse($selectionRange);
+        if ($range === null) {
             return [
                 'success' => false,
                 'error' => 'Invalid selection range format. Use \'startLine:startColumn-endLine:endColumn\' or \'startLine-endLine\'',
@@ -60,16 +70,17 @@ class ExtractMethodTool
             ];
         }
 
-        if ($startLine > $endLine) {
+        if ($range->startLine > $range->endLine) {
             return [
                 'success' => false,
-                'error' => "Start line ({$startLine}) must be less than or equal to end line ({$endLine})",
+                'error' => "Start line ({$range->startLine}) must be less than or equal to end line ({$range->endLine})",
             ];
         }
 
         return RefactoringHelpers::applyFileEdit(
+            $this->filesystem,
             $file,
-            fn($code) => $this->extractMethodInSource($code, $startLine, $endLine, $methodName),
+            fn($code) => $this->extractMethodInSource($code, $range->startLine, $range->endLine, $methodName),
             "Successfully extracted method '{$methodName}' from {$selectionRange} in {$file}"
         );
     }

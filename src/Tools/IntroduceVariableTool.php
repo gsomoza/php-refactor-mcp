@@ -10,11 +10,11 @@ use PhpMcp\Server\Attributes\Schema;
 use PhpParser\NodeTraverser;
 use Somoza\PhpRefactorMcp\Helpers\FilesystemFactory;
 use Somoza\PhpRefactorMcp\Helpers\RefactoringHelpers;
-use Somoza\PhpRefactorMcp\Tools\Internal\ExtractVariable\ExpressionExtractor;
-use Somoza\PhpRefactorMcp\Tools\Internal\ExtractVariable\ExpressionFinder;
+use Somoza\PhpRefactorMcp\Tools\Internal\IntroduceVariable\ExpressionSelector;
+use Somoza\PhpRefactorMcp\Tools\Internal\IntroduceVariable\VariableIntroducer;
 use Somoza\PhpRefactorMcp\ValueObjects\SelectionRange;
 
-class ExtractVariableTool
+class IntroduceVariableTool
 {
     private FilesystemOperator $filesystem;
 
@@ -24,19 +24,19 @@ class ExtractVariableTool
     }
 
     /**
-         * Extract an expression into a named variable.
+         * Introduce a new variable from selected expression.
          *
          * @param string $file Path to the PHP file
-         * @param string $selectionRange Range in format 'line:column' or 'line'
+         * @param string $selectionRange Range in format 'startLine:startColumn-endLine:endColumn' or simplified formats
          * @param string $variableName Name for the new variable (with or without $ prefix)
          *
          * @return array{success: bool, code?: string, file?: string, message?: string, error?: string}
          */
     #[McpTool(
-        name: 'extract_variable',
-        description: 'Extract an expression into a named variable'
+        name: 'introduce_variable',
+        description: 'Introduce a new variable from selected expression (preferred for large PHP file refactoring)'
     )]
-    public function extract(
+    public function introduce(
         #[Schema(
             type: 'string',
             description: 'Path to the PHP file'
@@ -44,7 +44,7 @@ class ExtractVariableTool
         string $file,
         #[Schema(
             type: 'string',
-            description: "Range in format 'line:column' or 'line'"
+            description: "Range in format 'startLine:startColumn-endLine:endColumn', 'line:column', or 'line'"
         )]
         string $selectionRange,
         #[Schema(
@@ -53,12 +53,12 @@ class ExtractVariableTool
         )]
         string $variableName
     ): array {
-        // Parse the selection range (line and optional column)
+        // Parse the selection range
         $range = SelectionRange::tryParse($selectionRange);
         if ($range === null) {
             return [
                 'success' => false,
-                'error' => "Invalid selection range format. Use 'line:column' or 'line'",
+                'error' => 'Invalid selection range format. Use \'startLine:startColumn-endLine:endColumn\', \'line:column\', or \'line\'',
             ];
         }
 
@@ -81,47 +81,72 @@ class ExtractVariableTool
         return RefactoringHelpers::applyFileEdit(
             $this->filesystem,
             $file,
-            fn($code) => $this->extractVariableInSource($code, $range->startLine, $range->startColumn, $variableName),
-            "Successfully extracted variable '\${$variableName}' at line {$range->startLine} in {$file}"
+            fn($code) => $this->introduceVariableInSource(
+                $code,
+                $range->startLine,
+                $range->startColumn,
+                $range->endLine,
+                $range->endColumn,
+                $variableName
+            ),
+            "Successfully introduced variable '\${$variableName}' from {$selectionRange} in {$file}"
         );
     }
 
     /**
-     * Extract variable from source code.
+     * Introduce variable from source code.
      *
      * @param string $code Source code
-     * @param int $line Line number
-     * @param int $column Column number
+     * @param int $startLine Starting line number
+     * @param int $startColumn Starting column number
+     * @param int|null $endLine Ending line number
+     * @param int|null $endColumn Ending column number
      * @param string $variableName Variable name (without $ prefix)
      *
      * @return string Refactored source code
      */
-    private function extractVariableInSource(string $code, int $line, int $column, string $variableName): string
-    {
+    private function introduceVariableInSource(
+        string $code,
+        int $startLine,
+        int $startColumn,
+        ?int $endLine,
+        ?int $endColumn,
+        string $variableName
+    ): string {
         // Parse the code
         $ast = RefactoringHelpers::parseCode($code);
 
-        // Find the expression to extract
-        $expressionFinder = new ExpressionFinder($line, $column);
+        // If no end position specified, use start position
+        if ($endLine === null || $endLine === 0) {
+            $endLine = $startLine;
+        }
+        if ($endColumn === null || $endColumn === 0) {
+            $endColumn = $startColumn;
+        }
+
+        // Find the expression to introduce as a variable
+        $expressionSelector = new ExpressionSelector($startLine, $startColumn, $endLine, $endColumn);
         $traverser = new NodeTraverser();
-        $traverser->addVisitor($expressionFinder);
+        $traverser->addVisitor($expressionSelector);
         $traverser->traverse($ast);
 
-        $targetExpr = $expressionFinder->getExpression();
-        $parentStmt = $expressionFinder->getParentStatement();
+        $targetExpr = $expressionSelector->getExpression();
+        $parentStmt = $expressionSelector->getParentStatement();
 
         if ($targetExpr === null) {
-            throw new \RuntimeException("Could not find expression at line {$line}, column {$column}");
+            throw new \RuntimeException(
+                "Could not find expression in range {$startLine}:{$startColumn}-{$endLine}:{$endColumn}"
+            );
         }
 
         if ($parentStmt === null) {
             throw new \RuntimeException("Could not find parent statement for expression");
         }
 
-        // Extract the expression
-        $extractor = new ExpressionExtractor($targetExpr, $parentStmt, $variableName);
+        // Introduce the variable
+        $introducer = new VariableIntroducer($targetExpr, $parentStmt, $variableName);
         $traverser = new NodeTraverser();
-        $traverser->addVisitor($extractor);
+        $traverser->addVisitor($introducer);
         $ast = $traverser->traverse($ast);
 
         // Generate the modified code

@@ -4,27 +4,31 @@ declare(strict_types=1);
 
 namespace Somoza\PhpRefactorMcp\Tools;
 
+use League\Flysystem\FilesystemOperator;
 use PhpMcp\Server\Attributes\McpTool;
 use PhpMcp\Server\Attributes\Schema;
 use PhpParser\Error;
 use PhpParser\ParserFactory;
+use Somoza\PhpRefactorMcp\Helpers\FilesystemFactory;
 
 class ParseTool
 {
     private ParserFactory $parserFactory;
+    private FilesystemOperator $filesystem;
 
-    public function __construct()
+    public function __construct(?FilesystemOperator $filesystem = null)
     {
         $this->parserFactory = new ParserFactory();
+        $this->filesystem = $filesystem ?? FilesystemFactory::createLocalFilesystem();
     }
 
     /**
-     * Parse a PHP file and return the Abstract Syntax Tree (AST) representation.
-     *
-     * @param string $file Path to the PHP file to parse
-     *
-     * @return array{success: bool, ast?: string, nodeCount?: int, file?: string, error?: string}
-     */
+         * Parse a PHP file and return the Abstract Syntax Tree (AST) representation.
+         *
+         * @param string $file Path to the PHP file to parse
+         *
+         * @return array{success: bool, ast?: string, nodeCount?: int, file?: string, error?: string}
+         */
     #[McpTool(
         name: 'parse_php',
         description: 'Parse a PHP file and return the Abstract Syntax Tree (AST) representation'
@@ -38,29 +42,15 @@ class ParseTool
     ): array {
         try {
             // Check if file exists
-            if (!file_exists($file)) {
+            if (!$this->filesystem->fileExists($file)) {
                 return [
                     'success' => false,
                     'error' => "File not found: {$file}",
                 ];
             }
 
-            // Check if file is readable
-            if (!is_readable($file)) {
-                return [
-                    'success' => false,
-                    'error' => "File is not readable: {$file}",
-                ];
-            }
-
             // Read file contents
-            $code = file_get_contents($file);
-            if ($code === false) {
-                return [
-                    'success' => false,
-                    'error' => "Failed to read file: {$file}",
-                ];
-            }
+            $code = $this->filesystem->read($file);
 
             $parser = $this->parserFactory->createForNewestSupportedVersion();
             $ast = $parser->parse($code);
