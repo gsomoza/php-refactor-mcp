@@ -1,0 +1,4 @@
+<?php
+
+$product = 5 * 10;
+$result = $product;

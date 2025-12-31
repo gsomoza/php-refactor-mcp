@@ -31,6 +31,9 @@ $result = 1 + 2;
         $this->assertArrayHasKey('code', $result);
         $this->assertStringContainsString('$sum = 1 + 2', $result['code']);
         $this->assertStringContainsString('$result = $sum', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testIntroduceExpressionWithoutDollarSign(): void
@@ -44,6 +47,9 @@ $result = 5 * 10;
         $this->assertTrue($result['success']);
         $this->assertStringContainsString('$product = 5 * 10', $result['code']);
         $this->assertStringContainsString('$result = $product', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testIntroduceExpressionInFunction(): void
@@ -58,6 +64,9 @@ function calculate() {
         $this->assertTrue($result['success']);
         $this->assertStringContainsString('$sum = 10 + 20', $result['code']);
         $this->assertStringContainsString('return $sum', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testIntroduceExpressionInMethod(): void
@@ -75,6 +84,9 @@ class MyClass {
         $this->assertTrue($result['success']);
         $this->assertStringContainsString('$product = 5 * 3', $result['code']);
         $this->assertStringContainsString('$x = $product', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testIntroduceComplexExpression(): void
@@ -90,6 +102,9 @@ $total = ($a + $b) * ($c - $d);
         // Should introduce a variable for an expression
         $this->assertStringContainsString('$intermediate', $result['code']);
         $this->assertStringContainsString('$total', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testIntroduceMethodCall(): void
@@ -103,6 +118,9 @@ $result = $obj->method();
         $this->assertTrue($result['success']);
         $this->assertStringContainsString('$value = $obj->method()', $result['code']);
         $this->assertStringContainsString('$result = $value', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testIntroduceArrayAccess(): void
@@ -116,6 +134,9 @@ $value = $array[0];
         $this->assertTrue($result['success']);
         $this->assertStringContainsString('$element = $array[0]', $result['code']);
         $this->assertStringContainsString('$value = $element', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testIntroduceWithRangeSelection(): void
@@ -129,6 +150,9 @@ $result = 100 + 200;
         $this->assertTrue($result['success']);
         $this->assertStringContainsString('$sum', $result['code']);
         $this->assertStringContainsString('$result', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testIntroduceFileNotFound(): void

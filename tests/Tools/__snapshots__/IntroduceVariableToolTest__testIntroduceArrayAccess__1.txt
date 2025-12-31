@@ -1,0 +1,4 @@
+<?php
+
+$element = $array[0];
+$value = $element;

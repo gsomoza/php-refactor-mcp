@@ -31,6 +31,9 @@ $result = 1 + 2;
         $this->assertArrayHasKey('code', $result);
         $this->assertStringContainsString('$sum = 1 + 2', $result['code']);
         $this->assertStringContainsString('$result = $sum', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testExtractExpressionWithoutDollarSign(): void
@@ -44,6 +47,9 @@ $result = 5 * 10;
         $this->assertTrue($result['success']);
         $this->assertStringContainsString('$product = 5 * 10', $result['code']);
         $this->assertStringContainsString('$result = $product', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testExtractExpressionInFunction(): void
@@ -58,6 +64,9 @@ function calculate() {
         $this->assertTrue($result['success']);
         $this->assertStringContainsString('$sum = 10 + 20', $result['code']);
         $this->assertStringContainsString('return $sum', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testExtractExpressionInMethod(): void
@@ -90,6 +99,9 @@ $total = ($a + $b) * ($c - $d);
         // Should extract an expression and assign it to a variable
         $this->assertStringContainsString('$intermediate', $result['code']);
         $this->assertStringContainsString('$total', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testExtractMethodCall(): void
@@ -116,6 +128,9 @@ $value = $array[0];
         $this->assertTrue($result['success']);
         $this->assertStringContainsString('$element = $array[0]', $result['code']);
         $this->assertStringContainsString('$value = $element', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testExtractFileNotFound(): void

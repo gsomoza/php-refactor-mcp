@@ -35,6 +35,9 @@ function test() {
         $this->assertStringContainsString('$newVar = 1', $result['code']);
         $this->assertStringContainsString('$result = $newVar + 2', $result['code']);
         $this->assertStringNotContainsString('$oldVar', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testRenameVariableWithoutDollarSign(): void
@@ -50,6 +53,9 @@ function test() {
         $this->assertTrue($result['success']);
         $this->assertStringContainsString('$newVar = 1', $result['code']);
         $this->assertStringNotContainsString('$oldVar', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testRenameVariableInMethod(): void
@@ -69,6 +75,9 @@ class MyClass {
         $this->assertStringContainsString('$value = 5', $result['code']);
         $this->assertStringContainsString('$result = $value * 2', $result['code']);
         $this->assertStringNotContainsString('$temp', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testRenameVariableInClosure(): void
@@ -84,6 +93,9 @@ $closure = function() {
         $this->assertTrue($result['success']);
         $this->assertStringContainsString('$num = 10', $result['code']);
         $this->assertStringContainsString('return $num * 2', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testRenameVariableDoesNotAffectOtherScopes(): void
@@ -108,6 +120,9 @@ function bar() {
         $this->assertStringContainsString('return $value', $result['code']);
         // Second function should still have $var
         $this->assertStringContainsString('$var = 2', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testRenameVariableMultipleOccurrences(): void
@@ -128,6 +143,9 @@ function calculate() {
         // All occurrences should be renamed
         $count = substr_count($result['code'], '$total');
         $this->assertGreaterThanOrEqual(5, $count); // At least 5 occurrences
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testRenameVariableInGlobalScope(): void
@@ -142,6 +160,9 @@ echo $globalVar;
         $this->assertTrue($result['success']);
         $this->assertStringContainsString('$config = 100', $result['code']);
         $this->assertStringContainsString('echo $config', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testRenameVariableFileNotFound(): void

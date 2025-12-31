@@ -37,6 +37,9 @@ class Calculator {
         $this->assertArrayHasKey('code', $result);
         $this->assertStringContainsString('private function calculateSum', $result['code']);
         $this->assertStringContainsString('$this->calculateSum', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testExtractMethodWithParameters(): void
@@ -58,6 +61,9 @@ class Calculator {
         // Should have parameters $x and $y
         $this->assertStringContainsString('$x', $result['code']);
         $this->assertStringContainsString('$y', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testExtractMethodWithReturnValue(): void
@@ -77,6 +83,9 @@ class Calculator {
         $this->assertStringContainsString('private function double', $result['code']);
         $this->assertStringContainsString('return $result', $result['code']);
         $this->assertStringContainsString('$result = $this->double', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testExtractMultipleStatements(): void
@@ -97,6 +106,9 @@ class Calculator {
         $this->assertTrue($result['success']);
         $this->assertStringContainsString('private function calculateSum', $result['code']);
         $this->assertStringContainsString('$sum = $a + $b + $c', $result['code']);
+
+        // Snapshot test: verify full output and valid PHP
+        $this->assertValidPhpSnapshot($result['code']);
     }
 
     public function testExtractMethodFileNotFound(): void

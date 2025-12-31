@@ -1,0 +1,11 @@
+<?php
+
+class MyClass
+{
+    public function calculate()
+    {
+        $product = 5 * 3;
+        $x = $product;
+        return $x;
+    }
+}
