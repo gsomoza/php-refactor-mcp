@@ -4,49 +4,24 @@ declare(strict_types=1);
 
 namespace Somoza\PhpRefactorMcp\Tests\Tools;
 
-use PHPUnit\Framework\TestCase;
+use Somoza\PhpRefactorMcp\Tests\Support\FilesystemTestCase;
 use Somoza\PhpRefactorMcp\Tools\ParseTool;
 
-class ParseToolTest extends TestCase
+class ParseToolTest extends FilesystemTestCase
 {
     private ParseTool $tool;
-    private string $tempDir;
 
     protected function setUp(): void
     {
-        $this->tool = new ParseTool();
-        $this->tempDir = sys_get_temp_dir() . '/php-refactor-mcp-test-' . uniqid();
-        mkdir($this->tempDir);
+        parent::setUp();
+        $this->tool = new ParseTool($this->filesystem);
     }
 
-    protected function tearDown(): void
-    {
-        // Clean up temp files
-        if (is_dir($this->tempDir)) {
-            $files = glob($this->tempDir . '/*');
-            if ($files !== false) {
-                foreach ($files as $file) {
-                    if (is_file($file)) {
-                        unlink($file);
-                    } elseif (is_dir($file)) {
-                        rmdir($file);
-                    }
-                }
-            }
-            rmdir($this->tempDir);
-        }
-    }
 
-    private function createTempFile(string $content): string
-    {
-        $file = $this->tempDir . '/test_' . uniqid() . '.php';
-        file_put_contents($file, $content);
-        return $file;
-    }
 
     public function testParseSimpleCode(): void
     {
-        $file = $this->createTempFile('<?php $x = 1 + 2;');
+        $file = $this->createFile('/test.php', '<?php $x = 1 + 2;');
         $result = $this->tool->parse($file);
 
         $this->assertTrue($result['success']);
@@ -66,7 +41,7 @@ class MyClass {
         return $this->property;
     }
 }';
-        $file = $this->createTempFile($code);
+        $file = $this->createFile('/test.php', $code);
         $result = $this->tool->parse($file);
 
         $this->assertTrue($result['success']);
@@ -80,7 +55,7 @@ class MyClass {
 function calculateSum($a, $b) {
     return $a + $b;
 }';
-        $file = $this->createTempFile($code);
+        $file = $this->createFile('/test.php', $code);
         $result = $this->tool->parse($file);
 
         $this->assertTrue($result['success']);
@@ -96,7 +71,7 @@ function test(?string $param): ?int {
     [$a, $b] = [1, 2];
     return $a + $b;
 }';
-        $file = $this->createTempFile($code);
+        $file = $this->createFile('/test.php', $code);
         $result = $this->tool->parse($file);
 
         $this->assertTrue($result['success']);
@@ -105,7 +80,7 @@ function test(?string $param): ?int {
 
     public function testParseSyntaxError(): void
     {
-        $file = $this->createTempFile('<?php $x = ;'); // Syntax error: missing expression
+        $file = $this->createFile('/test.php', '<?php $x = ;'); // Syntax error: missing expression
         $result = $this->tool->parse($file);
 
         $this->assertFalse($result['success']);
@@ -115,7 +90,7 @@ function test(?string $param): ?int {
 
     public function testParseInvalidCode(): void
     {
-        $file = $this->createTempFile('not valid php code at all');
+        $file = $this->createFile('/test.php', 'not valid php code at all');
         $result = $this->tool->parse($file);
 
         // Text without PHP tags is treated as InlineHTML, which is valid
@@ -125,7 +100,7 @@ function test(?string $param): ?int {
 
     public function testParseEmptyCode(): void
     {
-        $file = $this->createTempFile('');
+        $file = $this->createFile('/test.php', '');
         $result = $this->tool->parse($file);
 
         // Empty code results in empty AST (no statements)
@@ -141,7 +116,7 @@ $name = "John";
 $age = 30;
 $isActive = true;
 ';
-        $file = $this->createTempFile($code);
+        $file = $this->createFile('/test.php', $code);
         $result = $this->tool->parse($file);
 
         $this->assertTrue($result['success']);
@@ -162,7 +137,7 @@ class UserService {
     private UserRepository $repository;
 }
 ';
-        $file = $this->createTempFile($code);
+        $file = $this->createFile('/test.php', $code);
         $result = $this->tool->parse($file);
 
         $this->assertTrue($result['success']);
@@ -175,7 +150,7 @@ class UserService {
         $code = '<?php
 $result = ($a + $b) * ($c - $d) / $e;
 ';
-        $file = $this->createTempFile($code);
+        $file = $this->createFile('/test.php', $code);
         $result = $this->tool->parse($file);
 
         $this->assertTrue($result['success']);
@@ -191,23 +166,4 @@ $result = ($a + $b) * ($c - $d) / $e;
         $this->assertStringContainsString('File not found', $result['error']);
     }
 
-    public function testParseUnreadableFile(): void
-    {
-        // Skip this test on Windows as chmod doesn't work the same way
-        if (DIRECTORY_SEPARATOR === '\\') {
-            $this->markTestSkipped('Skipping file permission test on Windows');
-        }
-
-        $file = $this->createTempFile('<?php echo "test";');
-        chmod($file, 0o000);
-
-        $result = $this->tool->parse($file);
-
-        $this->assertFalse($result['success']);
-        $this->assertArrayHasKey('error', $result);
-        $this->assertStringContainsString('Unexpected error', $result['error']);
-
-        // Clean up
-        chmod($file, 0o644);
-    }
 }

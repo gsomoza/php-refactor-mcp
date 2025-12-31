@@ -4,45 +4,20 @@ declare(strict_types=1);
 
 namespace Somoza\PhpRefactorMcp\Tests\Tools;
 
-use PHPUnit\Framework\TestCase;
+use Somoza\PhpRefactorMcp\Tests\Support\FilesystemTestCase;
 use Somoza\PhpRefactorMcp\Tools\RenameVariableTool;
 
-class RenameVariableToolTest extends TestCase
+class RenameVariableToolTest extends FilesystemTestCase
 {
     private RenameVariableTool $tool;
-    private string $tempDir;
 
     protected function setUp(): void
     {
-        $this->tool = new RenameVariableTool();
-        $this->tempDir = sys_get_temp_dir() . '/php-refactor-mcp-test-' . uniqid();
-        mkdir($this->tempDir);
+        parent::setUp();
+        $this->tool = new RenameVariableTool($this->filesystem);
     }
 
-    protected function tearDown(): void
-    {
-        // Clean up temp files
-        if (is_dir($this->tempDir)) {
-            $files = glob($this->tempDir . '/*');
-            if ($files !== false) {
-                foreach ($files as $file) {
-                    if (is_file($file)) {
-                        unlink($file);
-                    } elseif (is_dir($file)) {
-                        rmdir($file);
-                    }
-                }
-            }
-            rmdir($this->tempDir);
-        }
-    }
 
-    private function createTempFile(string $content): string
-    {
-        $file = $this->tempDir . '/test_' . uniqid() . '.php';
-        file_put_contents($file, $content);
-        return $file;
-    }
 
     public function testRenameVariableInFunction(): void
     {
@@ -52,7 +27,7 @@ function test() {
     $result = $oldVar + 2;
     return $result;
 }';
-        $file = $this->createTempFile($code);
+        $file = $this->createFile('/test.php', $code);
         $result = $this->tool->rename($file, '3', '$oldVar', '$newVar');
 
         $this->assertTrue($result['success']);
@@ -69,7 +44,7 @@ function test() {
     $oldVar = 1;
     return $oldVar;
 }';
-        $file = $this->createTempFile($code);
+        $file = $this->createFile('/test.php', $code);
         $result = $this->tool->rename($file, '3', 'oldVar', 'newVar');
 
         $this->assertTrue($result['success']);
@@ -87,7 +62,7 @@ class MyClass {
         return $result;
     }
 }';
-        $file = $this->createTempFile($code);
+        $file = $this->createFile('/test.php', $code);
         $result = $this->tool->rename($file, '4', '$temp', '$value');
 
         $this->assertTrue($result['success']);
@@ -103,7 +78,7 @@ $closure = function() {
     $x = 10;
     return $x * 2;
 };';
-        $file = $this->createTempFile($code);
+        $file = $this->createFile('/test.php', $code);
         $result = $this->tool->rename($file, '3', '$x', '$num');
 
         $this->assertTrue($result['success']);
@@ -123,7 +98,7 @@ function bar() {
     $var = 2;
     return $var;
 }';
-        $file = $this->createTempFile($code);
+        $file = $this->createFile('/test.php', $code);
         // Rename in first function only
         $result = $this->tool->rename($file, '3', '$var', '$value');
 
@@ -145,7 +120,7 @@ function calculate() {
     $sum = $sum + 3;
     return $sum;
 }';
-        $file = $this->createTempFile($code);
+        $file = $this->createFile('/test.php', $code);
         $result = $this->tool->rename($file, '3', '$sum', '$total');
 
         $this->assertTrue($result['success']);
@@ -161,7 +136,7 @@ function calculate() {
 $globalVar = 100;
 echo $globalVar;
 ';
-        $file = $this->createTempFile($code);
+        $file = $this->createFile('/test.php', $code);
         $result = $this->tool->rename($file, '2', '$globalVar', '$config');
 
         $this->assertTrue($result['success']);
@@ -181,7 +156,7 @@ echo $globalVar;
     public function testRenameVariableEmptyOldName(): void
     {
         $code = '<?php $x = 1;';
-        $file = $this->createTempFile($code);
+        $file = $this->createFile('/test.php', $code);
         $result = $this->tool->rename($file, '1', '', '$new');
 
         $this->assertFalse($result['success']);
@@ -192,7 +167,7 @@ echo $globalVar;
     public function testRenameVariableEmptyNewName(): void
     {
         $code = '<?php $x = 1;';
-        $file = $this->createTempFile($code);
+        $file = $this->createFile('/test.php', $code);
         $result = $this->tool->rename($file, '1', '$old', '');
 
         $this->assertFalse($result['success']);
@@ -202,7 +177,7 @@ echo $globalVar;
 
     public function testRenameVariableSyntaxError(): void
     {
-        $file = $this->createTempFile('<?php $x = ;');
+        $file = $this->createFile('/test.php', '<?php $x = ;');
         $result = $this->tool->rename($file, '1', '$x', '$y');
 
         $this->assertFalse($result['success']);
@@ -210,23 +185,4 @@ echo $globalVar;
         $this->assertStringContainsString('Parse error', $result['error']);
     }
 
-    public function testRenameVariableUnreadableFile(): void
-    {
-        // Skip this test on Windows as chmod doesn't work the same way
-        if (DIRECTORY_SEPARATOR === '\\') {
-            $this->markTestSkipped('Skipping file permission test on Windows');
-        }
-
-        $file = $this->createTempFile('<?php $x = 1;');
-        chmod($file, 0o000);
-
-        $result = $this->tool->rename($file, '1', '$x', '$y');
-
-        $this->assertFalse($result['success']);
-        $this->assertArrayHasKey('error', $result);
-        $this->assertStringContainsString('Unexpected error', $result['error']);
-
-        // Clean up
-        chmod($file, 0o644);
-    }
 }

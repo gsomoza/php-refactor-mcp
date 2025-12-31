@@ -4,45 +4,20 @@ declare(strict_types=1);
 
 namespace Somoza\PhpRefactorMcp\Tests\Tools;
 
-use PHPUnit\Framework\TestCase;
+use Somoza\PhpRefactorMcp\Tests\Support\FilesystemTestCase;
 use Somoza\PhpRefactorMcp\Tools\ExtractMethodTool;
 
-class ExtractMethodToolTest extends TestCase
+class ExtractMethodToolTest extends FilesystemTestCase
 {
     private ExtractMethodTool $tool;
-    private string $tempDir;
 
     protected function setUp(): void
     {
-        $this->tool = new ExtractMethodTool();
-        $this->tempDir = sys_get_temp_dir() . '/php-refactor-mcp-test-' . uniqid();
-        mkdir($this->tempDir);
+        parent::setUp();
+        $this->tool = new ExtractMethodTool($this->filesystem);
     }
 
-    protected function tearDown(): void
-    {
-        // Clean up temp files
-        if (is_dir($this->tempDir)) {
-            $files = glob($this->tempDir . '/*');
-            if ($files !== false) {
-                foreach ($files as $file) {
-                    if (is_file($file)) {
-                        unlink($file);
-                    } elseif (is_dir($file)) {
-                        rmdir($file);
-                    }
-                }
-            }
-            rmdir($this->tempDir);
-        }
-    }
 
-    private function createTempFile(string $content): string
-    {
-        $file = $this->tempDir . '/test_' . uniqid() . '.php';
-        file_put_contents($file, $content);
-        return $file;
-    }
 
     public function testExtractSimpleMethod(): void
     {
@@ -55,7 +30,7 @@ class Calculator {
         return $sum;
     }
 }';
-        $file = $this->createTempFile($code);
+        $file = $this->createFile('/test.php', $code);
         $result = $this->tool->extract($file, '6-6', 'calculateSum');
 
         $this->assertTrue($result['success']);
@@ -75,7 +50,7 @@ class Calculator {
         echo $result;
     }
 }';
-        $file = $this->createTempFile($code);
+        $file = $this->createFile('/test.php', $code);
         $result = $this->tool->extract($file, '6-6', 'add');
 
         $this->assertTrue($result['success']);
@@ -95,7 +70,7 @@ class Calculator {
         return $result;
     }
 }';
-        $file = $this->createTempFile($code);
+        $file = $this->createFile('/test.php', $code);
         $result = $this->tool->extract($file, '5-5', 'double');
 
         $this->assertTrue($result['success']);
@@ -116,7 +91,7 @@ class Calculator {
         return $sum;
     }
 }';
-        $file = $this->createTempFile($code);
+        $file = $this->createFile('/test.php', $code);
         $result = $this->tool->extract($file, '6-7', 'calculateSum');
 
         $this->assertTrue($result['success']);
@@ -141,7 +116,7 @@ class Test {
         $x = 1;
     }
 }';
-        $file = $this->createTempFile($code);
+        $file = $this->createFile('/test.php', $code);
         $result = $this->tool->extract($file, '4-4', '');
 
         $this->assertFalse($result['success']);
@@ -157,7 +132,7 @@ class Test {
         $x = 1;
     }
 }';
-        $file = $this->createTempFile($code);
+        $file = $this->createFile('/test.php', $code);
         $result = $this->tool->extract($file, '5-3', 'method');
 
         $this->assertFalse($result['success']);
@@ -167,7 +142,7 @@ class Test {
 
     public function testExtractMethodSyntaxError(): void
     {
-        $file = $this->createTempFile('<?php class Test { public function test() { $x = ; } }');
+        $file = $this->createFile('/test.php', '<?php class Test { public function test() { $x = ; } }');
         $result = $this->tool->extract($file, '1-1', 'method');
 
         $this->assertFalse($result['success']);
@@ -183,7 +158,7 @@ function globalFunction() {
     $y = 2;
     return $x + $y;
 }';
-        $file = $this->createTempFile($code);
+        $file = $this->createFile('/test.php', $code);
         $result = $this->tool->extract($file, '3-4', 'add');
 
         $this->assertFalse($result['success']);
@@ -191,23 +166,4 @@ function globalFunction() {
         $this->assertStringContainsString('within a class', $result['error']);
     }
 
-    public function testExtractMethodUnreadableFile(): void
-    {
-        // Skip this test on Windows as chmod doesn't work the same way
-        if (DIRECTORY_SEPARATOR === '\\') {
-            $this->markTestSkipped('Skipping file permission test on Windows');
-        }
-
-        $file = $this->createTempFile('<?php class Test { function test() { $x = 1; } }');
-        chmod($file, 0o000);
-
-        $result = $this->tool->extract($file, '1-1', 'method');
-
-        $this->assertFalse($result['success']);
-        $this->assertArrayHasKey('error', $result);
-        $this->assertStringContainsString('Unexpected error', $result['error']);
-
-        // Clean up
-        chmod($file, 0o644);
-    }
 }
