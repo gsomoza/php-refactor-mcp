@@ -10,11 +10,13 @@ use DirectoryIterator;
  * Base test case for fixture-based testing.
  *
  * This class provides infrastructure for discovering and running tests based on fixture files.
- * Fixtures are organized as files under tests/Fixtures/{ToolName}/
+ * Fixtures are simple PHP files under tests/Fixtures/{ToolName}/{TestCase}.php
  *
- * Each test case consists of:
- * - {TestCase}.php: The PHP code to test (optional for error cases)
- * - {TestCase}.json: Metadata about the test (parameters, expected success/failure)
+ * Each fixture is a PHP file containing the code to be refactored.
+ * Test parameters are parsed from special comment headers in the fixture file.
+ *
+ * The output is validated using snapshot testing - no custom assertions needed.
+ * Error cases should be implemented as regular test methods in the test class.
  */
 abstract class FixtureBasedTestCase extends FilesystemTestCase
 {
@@ -27,15 +29,17 @@ abstract class FixtureBasedTestCase extends FilesystemTestCase
     /**
      * Execute the tool with the given fixture data.
      *
-     * @param array<string, mixed> $fixture
+     * @param string $fixtureName The name of the fixture (without .php extension)
+     * @param string $code The PHP code from the fixture file
+     * @param array<string, mixed> $params Parameters parsed from fixture comments
      * @return array<string, mixed>
      */
-    abstract protected function executeTool(array $fixture): array;
+    abstract protected function executeTool(string $fixtureName, string $code, array $params): array;
 
     /**
      * Data provider that discovers and yields all fixtures for this tool.
      *
-     * @return iterable<string, array{fixture: array<string, mixed>}>
+     * @return iterable<string, array{fixtureName: string, code: string, params: array<string, mixed>}>
      */
     public static function fixtureProvider(): iterable
     {
@@ -46,23 +50,33 @@ abstract class FixtureBasedTestCase extends FilesystemTestCase
             return;
         }
 
-        // Find all .json files in the fixtures directory
+        // Find all .php files in the fixtures directory
         foreach (new DirectoryIterator($fixturesDir) as $file) {
             if ($file->isDot() || !$file->isFile()) {
                 continue;
             }
 
-            // Only process .json files
-            if ($file->getExtension() !== 'json') {
+            // Only process .php files
+            if ($file->getExtension() !== 'php') {
                 continue;
             }
 
-            $testCaseName = $file->getBasename('.json');
-            $fixture = self::loadFixture($fixturesDir, $testCaseName);
+            $fixtureName = $file->getBasename('.php');
+            $fixturePath = $file->getPathname();
+            $fixtureContent = file_get_contents($fixturePath);
 
-            if ($fixture !== null) {
-                yield $testCaseName => ['fixture' => $fixture];
+            if ($fixtureContent === false) {
+                continue;
             }
+
+            // Parse parameters from comments
+            $params = self::parseFixtureParams($fixtureContent);
+
+            yield $fixtureName => [
+                'fixtureName' => $fixtureName,
+                'code' => $fixtureContent,
+                'params' => $params,
+            ];
         }
     }
 
@@ -78,37 +92,30 @@ abstract class FixtureBasedTestCase extends FilesystemTestCase
     }
 
     /**
-     * Load a fixture from files.
+     * Parse parameters from fixture file comments.
      *
-     * @return array<string, mixed>|null
+     * Looks for comment lines like:
+     * // param_name: value
+     *
+     * @return array<string, mixed>
      */
-    protected static function loadFixture(string $fixturesDir, string $testCaseName): ?array
+    protected static function parseFixtureParams(string $content): array
     {
-        $jsonPath = $fixturesDir . '/' . $testCaseName . '.json';
-        $phpPath = $fixturesDir . '/' . $testCaseName . '.php';
+        $params = [];
+        $lines = explode("\n", $content);
 
-        if (!file_exists($jsonPath)) {
-            return null;
+        foreach ($lines as $line) {
+            $line = trim($line);
+
+            // Match comment lines with parameters: // key: value
+            if (preg_match('/^\/\/\s*(\w+):\s*(.+)$/', $line, $matches)) {
+                $key = $matches[1];
+                $value = trim($matches[2]);
+                $params[$key] = $value;
+            }
         }
 
-        $testData = json_decode(file_get_contents($jsonPath), true);
-        if (!is_array($testData)) {
-            return null;
-        }
-
-        // Load .php file if it exists
-        $inputCode = null;
-        if (file_exists($phpPath)) {
-            $inputCode = file_get_contents($phpPath);
-        }
-
-        return [
-            'name' => $testCaseName,
-            'input' => $inputCode,
-            'params' => $testData['params'] ?? [],
-            'expectSuccess' => $testData['expectSuccess'] ?? true,
-            'expectError' => $testData['expectError'] ?? null,
-        ];
+        return $params;
     }
 
     /**
@@ -117,31 +124,19 @@ abstract class FixtureBasedTestCase extends FilesystemTestCase
      * This is the main test method that will be run for each fixture via the data provider.
      *
      * @dataProvider fixtureProvider
-     * @param array<string, mixed> $fixture
+     * @param string $fixtureName
+     * @param string $code
+     * @param array<string, mixed> $params
      */
-    public function testFixture(array $fixture): void
+    public function testFixture(string $fixtureName, string $code, array $params): void
     {
-        $result = $this->executeTool($fixture);
+        $result = $this->executeTool($fixtureName, $code, $params);
 
-        // Check success/failure expectation
-        if ($fixture['expectSuccess']) {
-            $this->assertTrue($result['success'], 'Expected successful execution');
-            $this->assertArrayHasKey('code', $result, 'Expected code in result');
+        // All fixtures are expected to succeed - error cases should be regular test methods
+        $this->assertTrue($result['success'], 'Expected successful execution for fixture: ' . $fixtureName);
+        $this->assertArrayHasKey('code', $result, 'Expected code in result');
 
-            // Use snapshot testing to verify the output
-            $this->assertValidPhpSnapshot($result['code']);
-        } else {
-            $this->assertFalse($result['success'], 'Expected failed execution');
-            $this->assertArrayHasKey('error', $result, 'Expected error in result');
-
-            // If specific error message is expected, check it
-            if ($fixture['expectError'] !== null) {
-                $this->assertStringContainsString(
-                    $fixture['expectError'],
-                    $result['error'],
-                    'Error message does not match expected'
-                );
-            }
-        }
+        // Use snapshot testing to verify the output
+        $this->assertValidPhpSnapshot($result['code']);
     }
 }

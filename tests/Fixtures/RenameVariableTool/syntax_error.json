@@ -1,9 +1,0 @@
-{
-    "params": {
-        "line": "1",
-        "oldName": "$x",
-        "newName": "$y"
-    },
-    "expectSuccess": false,
-    "expectError": "Parse error"
-}

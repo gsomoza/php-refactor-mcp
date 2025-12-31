@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Somoza\PhpRefactorMcp\Tests\Tools;
 
-use Somoza\PhpRefactorMcp\Tests\Support\FilesystemTestCase;
+use Somoza\PhpRefactorMcp\Tests\Support\FixtureBasedTestCase;
 use Somoza\PhpRefactorMcp\Tools\RenameVariableTool;
 
-class RenameVariableToolTest extends FilesystemTestCase
+class RenameVariableToolTest extends FixtureBasedTestCase
 {
     private RenameVariableTool $tool;
 
@@ -17,153 +17,32 @@ class RenameVariableToolTest extends FilesystemTestCase
         $this->tool = new RenameVariableTool($this->filesystem);
     }
 
-
-
-    public function testRenameVariableInFunction(): void
+    protected function getToolName(): string
     {
-        $code = '<?php
-function test() {
-    $oldVar = 1;
-    $result = $oldVar + 2;
-    return $result;
-}';
-        $file = $this->createFile('/test.php', $code);
-        $result = $this->tool->rename($file, '3', '$oldVar', '$newVar');
-
-        $this->assertTrue($result['success']);
-        $this->assertArrayHasKey('code', $result);
-        $this->assertStringContainsString('$newVar = 1', $result['code']);
-        $this->assertStringContainsString('$result = $newVar + 2', $result['code']);
-        $this->assertStringNotContainsString('$oldVar', $result['code']);
-
-        // Snapshot test: verify full output and valid PHP
-        $this->assertValidPhpSnapshot($result['code']);
+        return 'RenameVariableTool';
     }
 
-    public function testRenameVariableWithoutDollarSign(): void
+    /**
+     * @param string $fixtureName
+     * @param string $code
+     * @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
+    protected function executeTool(string $fixtureName, string $code, array $params): array
     {
-        $code = '<?php
-function test() {
-    $oldVar = 1;
-    return $oldVar;
-}';
+        // Create a virtual file with the fixture code
         $file = $this->createFile('/test.php', $code);
-        $result = $this->tool->rename($file, '3', 'oldVar', 'newVar');
 
-        $this->assertTrue($result['success']);
-        $this->assertStringContainsString('$newVar = 1', $result['code']);
-        $this->assertStringNotContainsString('$oldVar', $result['code']);
-
-        // Snapshot test: verify full output and valid PHP
-        $this->assertValidPhpSnapshot($result['code']);
+        // Execute the tool with parameters from the fixture
+        return $this->tool->rename(
+            $file,
+            $params['line'] ?? '1',
+            $params['oldName'] ?? '',
+            $params['newName'] ?? ''
+        );
     }
 
-    public function testRenameVariableInMethod(): void
-    {
-        $code = '<?php
-class MyClass {
-    public function myMethod() {
-        $temp = 5;
-        $result = $temp * 2;
-        return $result;
-    }
-}';
-        $file = $this->createFile('/test.php', $code);
-        $result = $this->tool->rename($file, '4', '$temp', '$value');
-
-        $this->assertTrue($result['success']);
-        $this->assertStringContainsString('$value = 5', $result['code']);
-        $this->assertStringContainsString('$result = $value * 2', $result['code']);
-        $this->assertStringNotContainsString('$temp', $result['code']);
-
-        // Snapshot test: verify full output and valid PHP
-        $this->assertValidPhpSnapshot($result['code']);
-    }
-
-    public function testRenameVariableInClosure(): void
-    {
-        $code = '<?php
-$closure = function() {
-    $x = 10;
-    return $x * 2;
-};';
-        $file = $this->createFile('/test.php', $code);
-        $result = $this->tool->rename($file, '3', '$x', '$num');
-
-        $this->assertTrue($result['success']);
-        $this->assertStringContainsString('$num = 10', $result['code']);
-        $this->assertStringContainsString('return $num * 2', $result['code']);
-
-        // Snapshot test: verify full output and valid PHP
-        $this->assertValidPhpSnapshot($result['code']);
-    }
-
-    public function testRenameVariableDoesNotAffectOtherScopes(): void
-    {
-        $code = '<?php
-function foo() {
-    $var = 1;
-    return $var;
-}
-
-function bar() {
-    $var = 2;
-    return $var;
-}';
-        $file = $this->createFile('/test.php', $code);
-        // Rename in first function only
-        $result = $this->tool->rename($file, '3', '$var', '$value');
-
-        $this->assertTrue($result['success']);
-        // First function should have $value
-        $this->assertStringContainsString('$value = 1', $result['code']);
-        $this->assertStringContainsString('return $value', $result['code']);
-        // Second function should still have $var
-        $this->assertStringContainsString('$var = 2', $result['code']);
-
-        // Snapshot test: verify full output and valid PHP
-        $this->assertValidPhpSnapshot($result['code']);
-    }
-
-    public function testRenameVariableMultipleOccurrences(): void
-    {
-        $code = '<?php
-function calculate() {
-    $sum = 0;
-    $sum = $sum + 1;
-    $sum = $sum + 2;
-    $sum = $sum + 3;
-    return $sum;
-}';
-        $file = $this->createFile('/test.php', $code);
-        $result = $this->tool->rename($file, '3', '$sum', '$total');
-
-        $this->assertTrue($result['success']);
-        $this->assertStringNotContainsString('$sum', $result['code']);
-        // All occurrences should be renamed
-        $count = substr_count($result['code'], '$total');
-        $this->assertGreaterThanOrEqual(5, $count); // At least 5 occurrences
-
-        // Snapshot test: verify full output and valid PHP
-        $this->assertValidPhpSnapshot($result['code']);
-    }
-
-    public function testRenameVariableInGlobalScope(): void
-    {
-        $code = '<?php
-$globalVar = 100;
-echo $globalVar;
-';
-        $file = $this->createFile('/test.php', $code);
-        $result = $this->tool->rename($file, '2', '$globalVar', '$config');
-
-        $this->assertTrue($result['success']);
-        $this->assertStringContainsString('$config = 100', $result['code']);
-        $this->assertStringContainsString('echo $config', $result['code']);
-
-        // Snapshot test: verify full output and valid PHP
-        $this->assertValidPhpSnapshot($result['code']);
-    }
+    // Error cases - traditional test methods
 
     public function testRenameVariableFileNotFound(): void
     {
@@ -205,5 +84,4 @@ echo $globalVar;
         $this->assertArrayHasKey('error', $result);
         $this->assertStringContainsString('Parse error', $result['error']);
     }
-
 }

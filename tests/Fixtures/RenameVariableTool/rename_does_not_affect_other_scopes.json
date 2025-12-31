@@ -1,8 +1,0 @@
-{
-    "params": {
-        "line": "3",
-        "oldName": "$var",
-        "newName": "$value"
-    },
-    "expectSuccess": true
-}
