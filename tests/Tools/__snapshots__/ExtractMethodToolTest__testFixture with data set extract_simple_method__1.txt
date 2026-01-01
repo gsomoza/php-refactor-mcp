@@ -1,0 +1,17 @@
+<?php
+
+class Calculator
+{
+    public function calculate()
+    {
+        $a = 1;
+        $b = $this->calculateSum();
+        $sum = $a + $b;
+        return $sum;
+    }
+    private function calculateSum()
+    {
+        $b = 2;
+        return $b;
+    }
+}

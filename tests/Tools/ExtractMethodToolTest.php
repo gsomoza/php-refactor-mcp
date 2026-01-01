@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Somoza\PhpRefactorMcp\Tests\Tools;
 
-use Somoza\PhpRefactorMcp\Tests\Support\FilesystemTestCase;
+use Somoza\PhpRefactorMcp\Tests\Support\FixtureBasedTestCase;
 use Somoza\PhpRefactorMcp\Tools\ExtractMethodTool;
 
-class ExtractMethodToolTest extends FilesystemTestCase
+class ExtractMethodToolTest extends FixtureBasedTestCase
 {
     private ExtractMethodTool $tool;
 
@@ -17,99 +17,7 @@ class ExtractMethodToolTest extends FilesystemTestCase
         $this->tool = new ExtractMethodTool($this->filesystem);
     }
 
-
-
-    public function testExtractSimpleMethod(): void
-    {
-        $code = '<?php
-class Calculator {
-    public function calculate() {
-        $a = 1;
-        $b = 2;
-        $sum = $a + $b;
-        return $sum;
-    }
-}';
-        $file = $this->createFile('/test.php', $code);
-        $result = $this->tool->extract($file, '6-6', 'calculateSum');
-
-        $this->assertTrue($result['success']);
-        $this->assertArrayHasKey('code', $result);
-        $this->assertStringContainsString('private function calculateSum', $result['code']);
-        $this->assertStringContainsString('$this->calculateSum', $result['code']);
-
-        // Snapshot test: verify full output and valid PHP
-        $this->assertValidPhpSnapshot($result['code']);
-    }
-
-    public function testExtractMethodWithParameters(): void
-    {
-        $code = '<?php
-class Calculator {
-    public function calculate() {
-        $x = 10;
-        $y = 20;
-        $result = $x + $y;
-        echo $result;
-    }
-}';
-        $file = $this->createFile('/test.php', $code);
-        $result = $this->tool->extract($file, '6-6', 'add');
-
-        $this->assertTrue($result['success']);
-        $this->assertStringContainsString('private function add', $result['code']);
-        // Should have parameters $x and $y
-        $this->assertStringContainsString('$x', $result['code']);
-        $this->assertStringContainsString('$y', $result['code']);
-
-        // Snapshot test: verify full output and valid PHP
-        $this->assertValidPhpSnapshot($result['code']);
-    }
-
-    public function testExtractMethodWithReturnValue(): void
-    {
-        $code = '<?php
-class Calculator {
-    public function calculate() {
-        $x = 5;
-        $result = $x * 2;
-        return $result;
-    }
-}';
-        $file = $this->createFile('/test.php', $code);
-        $result = $this->tool->extract($file, '5-5', 'double');
-
-        $this->assertTrue($result['success']);
-        $this->assertStringContainsString('private function double', $result['code']);
-        $this->assertStringContainsString('return $result', $result['code']);
-        $this->assertStringContainsString('$result = $this->double', $result['code']);
-
-        // Snapshot test: verify full output and valid PHP
-        $this->assertValidPhpSnapshot($result['code']);
-    }
-
-    public function testExtractMultipleStatements(): void
-    {
-        $code = '<?php
-class Calculator {
-    public function calculate() {
-        $a = 1;
-        $b = 2;
-        $c = 3;
-        $sum = $a + $b + $c;
-        return $sum;
-    }
-}';
-        $file = $this->createFile('/test.php', $code);
-        $result = $this->tool->extract($file, '6-7', 'calculateSum');
-
-        $this->assertTrue($result['success']);
-        $this->assertStringContainsString('private function calculateSum', $result['code']);
-        $this->assertStringContainsString('$sum = $a + $b + $c', $result['code']);
-
-        // Snapshot test: verify full output and valid PHP
-        $this->assertValidPhpSnapshot($result['code']);
-    }
+    // Error cases - traditional test methods
 
     public function testExtractMethodFileNotFound(): void
     {
@@ -177,5 +85,4 @@ function globalFunction() {
         $this->assertArrayHasKey('error', $result);
         $this->assertStringContainsString('within a class', $result['error']);
     }
-
 }

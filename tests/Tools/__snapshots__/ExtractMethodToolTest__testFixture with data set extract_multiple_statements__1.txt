@@ -1,0 +1,18 @@
+<?php
+
+class Calculator
+{
+    public function calculate()
+    {
+        $a = 1;
+        [$b, $c] = $this->calculateSum();
+        $sum = $a + $b + $c;
+        return $sum;
+    }
+    private function calculateSum()
+    {
+        $b = 2;
+        $c = 3;
+        return [$b, $c];
+    }
+}

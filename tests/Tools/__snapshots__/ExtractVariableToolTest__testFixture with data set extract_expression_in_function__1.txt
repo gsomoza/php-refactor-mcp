@@ -1,0 +1,7 @@
+<?php
+
+function calculate()
+{
+    $sum = 10 + 20;
+    return $sum;
+}

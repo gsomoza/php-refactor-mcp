@@ -1,0 +1,16 @@
+<?php
+
+class Calculator
+{
+    public function calculate()
+    {
+        $x = $this->double();
+        $result = $x * 2;
+        return $result;
+    }
+    private function double()
+    {
+        $x = 5;
+        return $x;
+    }
+}

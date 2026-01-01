@@ -1,0 +1,8 @@
+<?php
+
+function test()
+{
+    $newVar = 1;
+    $result = $newVar + 2;
+    return $result;
+}

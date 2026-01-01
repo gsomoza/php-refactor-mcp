@@ -1,0 +1,17 @@
+<?php
+
+class Calculator
+{
+    public function calculate()
+    {
+        $x = 10;
+        $y = $this->add();
+        $result = $x + $y;
+        echo $result;
+    }
+    private function add()
+    {
+        $y = 20;
+        return $y;
+    }
+}
