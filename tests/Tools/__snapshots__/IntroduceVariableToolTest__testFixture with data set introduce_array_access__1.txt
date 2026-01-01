@@ -1,6 +1,4 @@
 <?php
 
 $element = $array[0];
-// position: 5:10
-// variableName: $element
 $value = $element;

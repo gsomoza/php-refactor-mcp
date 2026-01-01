@@ -1,8 +1,5 @@
 <?php
 
-// line: 6
-// oldName: $var
-// newName: $value
 function foo()
 {
     $value = 1;

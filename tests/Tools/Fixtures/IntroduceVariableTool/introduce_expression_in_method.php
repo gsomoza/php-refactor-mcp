@@ -1,6 +1,8 @@
 <?php
-// position: 7:14
-// variableName: $product
+/**
+ * @selectionRange: 4:14
+ * @variableName: $product
+ */
 
 class MyClass {
     public function calculate() {

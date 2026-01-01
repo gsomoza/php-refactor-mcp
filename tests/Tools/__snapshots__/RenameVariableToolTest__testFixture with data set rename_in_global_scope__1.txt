@@ -1,7 +1,4 @@
 <?php
 
-// line: 5
-// oldName: $globalVar
-// newName: $config
 $config = 100;
 echo $config;

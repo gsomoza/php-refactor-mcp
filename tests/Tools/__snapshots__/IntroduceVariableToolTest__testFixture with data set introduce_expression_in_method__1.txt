@@ -1,7 +1,5 @@
 <?php
 
-// position: 7:14
-// variableName: $product
 class MyClass
 {
     public function calculate()

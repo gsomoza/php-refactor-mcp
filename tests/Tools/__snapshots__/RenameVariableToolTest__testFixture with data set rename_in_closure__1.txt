@@ -1,8 +1,5 @@
 <?php
 
-// line: 6
-// oldName: $x
-// newName: $num
 $closure = function () {
     $num = 10;
     return $num * 2;

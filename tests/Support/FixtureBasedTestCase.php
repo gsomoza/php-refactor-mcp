@@ -53,8 +53,11 @@ abstract class FixtureBasedTestCase extends FilesystemTestCase
      */
     protected function executeTool(string $fixtureName, string $code, array $params): array
     {
-        // Create a virtual file with the fixture code
-        $file = $this->createFile('/test.php', $code);
+        // Strip the docblock from the code before passing to the tool
+        $cleanCode = $this->stripDocblock($code);
+
+        // Create a virtual file with the clean code
+        $file = $this->createFile('/test.php', $cleanCode);
 
         // Get the tool instance from the test class
         $tool = $this->getToolInstance();
@@ -67,6 +70,21 @@ abstract class FixtureBasedTestCase extends FilesystemTestCase
 
         // Call the tool method
         return $method->invokeArgs($tool, $args);
+    }
+
+    /**
+     * Strip the docblock comment from fixture code.
+     */
+    protected function stripDocblock(string $code): string
+    {
+        // Remove the docblock comment (/** ... */)
+        $cleaned = preg_replace('/\/\*\*\s*.*?\s*\*\//s', '', $code);
+        if ($cleaned === null) {
+            return $code;
+        }
+        // Remove extra blank lines that might be left
+        $cleaned = preg_replace('/^\s*\n/m', '', $cleaned);
+        return $cleaned ?? $code;
     }
 
     /**
@@ -127,9 +145,9 @@ abstract class FixtureBasedTestCase extends FilesystemTestCase
             }
 
             // Map fixture params to method params by name
-            // Common parameter names and their fixture equivalents
+            // All range/position parameters are normalized to 'selectionRange' in fixtures
             $parameterMap = [
-                'selectionRange' => ['line', 'range', 'position', 'selectionRange'],
+                'selectionRange' => ['selectionRange'],
                 'oldName' => ['oldName'],
                 'newName' => ['newName'],
                 'methodName' => ['methodName'],
@@ -155,12 +173,15 @@ abstract class FixtureBasedTestCase extends FilesystemTestCase
                 $value = $parameter->getDefaultValue();
             }
 
-            // If still no value, use empty string for required string parameters
-            if ($value === null) {
-                $type = $parameter->getType();
-                if ($type instanceof \ReflectionNamedType && $type->getName() === 'string') {
-                    $value = '';
-                }
+            // If still no value and parameter is required, throw exception
+            if ($value === null && !$parameter->isOptional()) {
+                throw new \RuntimeException(
+                    sprintf(
+                        'Required parameter "%s" not found in fixture. Available parameters: %s',
+                        $paramName,
+                        implode(', ', array_keys($params))
+                    )
+                );
             }
 
             $args[] = $value;
@@ -177,7 +198,7 @@ abstract class FixtureBasedTestCase extends FilesystemTestCase
     public static function fixtureProvider(): iterable
     {
         $toolName = static::getToolNameStatic();
-        $fixturesDir = __DIR__ . '/../Fixtures/' . $toolName;
+        $fixturesDir = __DIR__ . '/../Tools/Fixtures/' . $toolName;
 
         // Create a Flysystem instance for reading fixtures from the real filesystem
         $adapter = new LocalFilesystemAdapter($fixturesDir);
@@ -228,24 +249,36 @@ abstract class FixtureBasedTestCase extends FilesystemTestCase
     /**
      * Parse parameters from fixture file comments.
      *
-     * Looks for comment lines like:
-     * // param_name: value
+     * Looks for docblock-style parameter annotations:
+     * /**
+     *  * @param_name: value
+     *  *&#47;
      *
      * @return array<string, mixed>
      */
     protected static function parseFixtureParams(string $content): array
     {
         $params = [];
-        $lines = explode("\n", $content);
 
-        foreach ($lines as $line) {
-            $line = trim($line);
+        // Try to extract docblock comments
+        if (preg_match('/\/\*\*\s*(.*?)\s*\*\//s', $content, $docblockMatch)) {
+            $docblock = $docblockMatch[1];
+            $lines = explode("\n", $docblock);
 
-            // Match comment lines with parameters: // key: value
-            if (preg_match('/^\/\/\s*(\w+):\s*(.+)$/', $line, $matches)) {
-                $key = $matches[1];
-                $value = trim($matches[2]);
-                $params[$key] = $value;
+            foreach ($lines as $line) {
+                $line = trim($line);
+                // Remove leading asterisk and whitespace
+                $cleanedLine = preg_replace('/^\*\s*/', '', $line);
+                if ($cleanedLine === null) {
+                    continue;
+                }
+
+                // Match @key: value pattern
+                if (preg_match('/^@(\w+):\s*(.+)$/', $cleanedLine, $matches)) {
+                    $key = $matches[1];
+                    $value = trim($matches[2]);
+                    $params[$key] = $value;
+                }
             }
         }
 

@@ -5,7 +5,7 @@ parameters:
         - tests
     excludePaths:
         - vendor
-        - tests/Fixtures
+        - tests/Tools/Fixtures
     checkMissingIterableValueType: true
     checkGenericClassInNonGenericObjectType: true
     reportUnmatchedIgnoredErrors: false

@@ -1,7 +1,9 @@
 <?php
-// line: 6
-// oldName: $oldVar
-// newName: $newVar
+/**
+ * @selectionRange: 3
+ * @oldName: $oldVar
+ * @newName: $newVar
+ */
 
 function test() {
     $oldVar = 1;

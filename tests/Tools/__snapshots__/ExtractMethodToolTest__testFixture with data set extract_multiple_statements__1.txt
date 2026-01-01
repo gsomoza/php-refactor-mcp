@@ -1,7 +1,5 @@
 <?php
 
-// range: 9-10
-// methodName: calculateSum
 class Calculator
 {
     public function calculate()

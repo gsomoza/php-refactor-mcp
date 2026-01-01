@@ -1,6 +1,4 @@
 <?php
 
 $product = 5 * 10;
-// position: 5:11
-// variableName: product
 $result = $product;

@@ -1,6 +1,8 @@
 <?php
-// range: 9-9
-// methodName: add
+/**
+ * @selectionRange: 6-6
+ * @methodName: add
+ */
 
 class Calculator {
     public function calculate() {

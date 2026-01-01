@@ -1,7 +1,9 @@
 <?php
-// line: 7
-// oldName: $temp
-// newName: $value
+/**
+ * @selectionRange: 4
+ * @oldName: $temp
+ * @newName: $value
+ */
 
 class MyClass {
     public function myMethod() {

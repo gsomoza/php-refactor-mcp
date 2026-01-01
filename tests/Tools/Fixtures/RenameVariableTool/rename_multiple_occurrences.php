@@ -1,7 +1,9 @@
 <?php
-// line: 6
-// oldName: $sum
-// newName: $total
+/**
+ * @selectionRange: 3
+ * @oldName: $sum
+ * @newName: $total
+ */
 
 function calculate() {
     $sum = 0;

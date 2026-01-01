@@ -1,8 +1,5 @@
 <?php
 
-// line: 7
-// oldName: $temp
-// newName: $value
 class MyClass
 {
     public function myMethod()

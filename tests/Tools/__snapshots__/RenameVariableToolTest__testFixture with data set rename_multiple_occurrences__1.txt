@@ -1,8 +1,5 @@
 <?php
 
-// line: 6
-// oldName: $sum
-// newName: $total
 function calculate()
 {
     $total = 0;
